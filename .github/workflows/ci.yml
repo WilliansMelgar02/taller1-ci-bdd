@@ -1,0 +1,158 @@
+# =============================================================================
+#  Pipeline de Integración Continua — Taller 1, Unidad II
+#
+#  Estrategia: "fail fast, feedback rápido".
+#  Las etapas se ordenan de la más barata a la más cara, de modo que un error
+#  trivial (compilación o prueba unitaria) detiene el pipeline en segundos y no
+#  consume tiempo de agente ejecutando pruebas de aceptación.
+#
+#      compilar ──► pruebas unitarias ──► pruebas BDD ──► publicar reportes
+#         5 s              3 s                8 s              ~20 s
+# =============================================================================
+name: CI - Pruebas Automatizadas
+
+# ---------------------------------------------------------------------------
+# Disparadores: cada push a main o a una rama feature, y cada Pull Request.
+# Esto materializa la práctica de integración continua: nadie integra código
+# sin que la suite completa se haya ejecutado antes.
+# ---------------------------------------------------------------------------
+on:
+  push:
+    branches: [ main, 'feature/**', 'fix/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:        # permite ejecución manual desde la pestaña Actions
+
+# Si se empuja dos veces seguidas a la misma rama, se cancela la ejecución
+# anterior: evita gastar minutos de CI en un commit que ya quedó obsoleto.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write             # publicar los resultados como "checks" del commit
+  pull-requests: write      # comentar el resumen en el Pull Request
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+
+  # ===========================================================================
+  # ETAPA 1 — Compilación y pruebas unitarias (rápidas y atómicas)
+  # ===========================================================================
+  pruebas-unitarias:
+    name: 1 · Compilación y pruebas unitarias
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven          # cachea ~/.m2 y acorta el build de minutos a segundos
+
+      - name: Compilar el proyecto
+        run: mvn -B -ntp clean compile
+
+      - name: Ejecutar pruebas unitarias (Surefire)
+        run: mvn -B -ntp test
+
+      - name: Publicar resultados como check del commit
+        uses: mikepenz/action-junit-report@v5
+        if: always()            # se publica incluso si las pruebas fallaron
+        continue-on-error: true
+        with:
+          report_paths: 'target/surefire-reports/TEST-*.xml'
+          check_name: 'Resultados · Pruebas unitarias'
+          detailed_summary: true
+          include_passed: true
+
+      - name: Resumen en la pestaña Actions
+        if: always()
+        run: |
+          echo "## Pruebas unitarias (JUnit 5)" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(grep -ho 'tests="[0-9]*"' target/surefire-reports/TEST-*.xml | grep -o '[0-9]*' | paste -sd+ | bc)
+          FALLOS=$(grep -ho 'failures="[0-9]*"' target/surefire-reports/TEST-*.xml | grep -o '[0-9]*' | paste -sd+ | bc)
+          ERRORES=$(grep -ho 'errors="[0-9]*"' target/surefire-reports/TEST-*.xml | grep -o '[0-9]*' | paste -sd+ | bc)
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pruebas ejecutadas | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Fallos | $FALLOS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Errores | $ERRORES |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Guardar resultados de las pruebas unitarias
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-pruebas-unitarias
+          path: target/surefire-reports/
+          retention-days: 30
+
+  # ===========================================================================
+  # ETAPA 2 — Pruebas de aceptación BDD (Cucumber)
+  # Solo se ejecuta si la etapa 1 pasó: no tiene sentido validar reglas de
+  # negocio sobre un código que ya falló en lo básico.
+  # ===========================================================================
+  pruebas-bdd:
+    name: 2 · Escenarios BDD (Cucumber)
+    runs-on: ubuntu-latest
+    needs: pruebas-unitarias
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      # -DskipUnitTests=true evita repetir las unitarias que ya pasaron en la etapa 1.
+      - name: Ejecutar escenarios BDD (Failsafe + Cucumber)
+        run: mvn -B -ntp verify -DskipUnitTests=true
+
+      - name: Generar reporte HTML navegable (Surefire y Failsafe)
+        if: always()
+        run: mvn -B -ntp site -DskipTests
+
+      - name: Publicar resultados BDD como check del commit
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        continue-on-error: true
+        with:
+          report_paths: 'target/cucumber-reports/cucumber-junit.xml'
+          check_name: 'Resultados · Escenarios BDD'
+          detailed_summary: true
+          include_passed: true
+
+      - name: Resumen BDD en la pestaña Actions
+        if: always()
+        run: |
+          echo "## Escenarios BDD (Cucumber)" >> $GITHUB_STEP_SUMMARY
+          TOTAL=$(grep -ho 'tests="[0-9]*"' target/cucumber-reports/cucumber-junit.xml | grep -o '[0-9]*' | paste -sd+ | bc)
+          FALLOS=$(grep -ho 'failures="[0-9]*"' target/cucumber-reports/cucumber-junit.xml | grep -o '[0-9]*' | paste -sd+ | bc)
+          echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Escenarios ejecutados | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| Escenarios fallidos | ${FALLOS:-0} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Guardar reporte navegable de BDD
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-bdd-cucumber
+          path: |
+            target/cucumber-reports/
+            target/site/
+          retention-days: 30
