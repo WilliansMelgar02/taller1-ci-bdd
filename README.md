@@ -176,6 +176,7 @@ proyecto compile o pase las pruebas: `mvn verify` funciona por sí solo.
 |---|---|
 | `preparar-entorno.ps1` | Expone Maven y k6 en la sesión de PowerShell y fija la consola en UTF-8, para que los acentos de los escenarios Gherkin se vean correctamente |
 | `correr-performance.ps1` | Ejecuta la prueba de carga de punta a punta: levanta el servicio, espera a que responda, corre k6 y lo detiene |
+| `generar-indice-evidencias.js` | Genera `docs/evidencias/index.html`, el índice navegable que muestra cada captura junto a lo que demuestra y la figura del informe en la que aparece |
 | `mostrar-estructura.ps1` | Muestra la estructura del proyecto partiendo de `git ls-files`, de modo que quedan fuera `target/`, `sitio/` y `.git/` sin necesidad de filtros |
 | `servidor-reportes.js` | Sirve en `localhost:8090` el mismo sitio que el pipeline publica en GitHub Pages, para revisarlo antes de hacer push |
 | `capturar.ps1` | Captura una ventana y la guarda en `docs/evidencias`; admite `-Ventana <título>` para fotografiar el navegador sin cambiar de ventana |

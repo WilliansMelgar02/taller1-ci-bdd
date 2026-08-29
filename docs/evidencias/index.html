@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Índice de evidencias · Taller 1</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plano:#f9f9f7; --superficie:#fcfcfb; --borde:#e1e0d9;
+    --tinta:#0b0b0b; --tinta-2:#52514e; --tinta-mute:#898781; --acento:#1f3a5f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --plano:#0d0d0d; --superficie:#1a1a19; --borde:#2c2c2a;
+      --tinta:#ffffff; --tinta-2:#c3c2b7; --tinta-mute:#898781; --acento:#3987e5;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plano);color:var(--tinta);
+       font:15px/1.55 "Segoe UI",system-ui,-apple-system,Arial,sans-serif}
+  header.top{background:var(--acento);color:#fff;padding:26px 32px}
+  header.top h1{margin:0 0 5px;font-size:21px;letter-spacing:-.2px}
+  header.top p{margin:0;opacity:.88;font-size:13.5px;max-width:70ch}
+  header.top a{color:#fff}
+  main{max-width:1080px;margin:0 auto;padding:26px 20px 60px}
+  .ficha{background:var(--superficie);border:1px solid var(--borde);
+         border-radius:8px;margin-bottom:22px;overflow:hidden}
+  .ficha header{display:flex;align-items:center;gap:14px;padding:14px 18px;
+                border-bottom:1px solid var(--borde)}
+  .n{background:var(--acento);color:#fff;width:30px;height:30px;border-radius:50%;
+     display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+  .ficha h2{margin:0;font-size:14.5px;font-family:Consolas,ui-monospace,monospace;word-break:break-all}
+  .meta{margin:2px 0 0;font-size:12px;color:var(--tinta-mute)}
+  .demuestra{margin:0;padding:12px 18px;font-size:13.5px;color:var(--tinta-2);
+             border-bottom:1px solid var(--borde)}
+  code{font-family:Consolas,ui-monospace,monospace;font-size:.92em;
+       background:var(--plano);padding:1px 5px;border-radius:3px}
+  .ficha img{display:block;width:100%;height:auto}
+  footer{text-align:center;color:var(--tinta-mute);font-size:12.5px;padding:22px}
+</style></head><body>
+<header class="top">
+  <h1>Índice de evidencias &mdash; Taller 1, Unidad II</h1>
+  <p>Las 18 capturas que respaldan el informe, cada una junto a lo que demuestra y a la figura
+     en la que aparece. Todas corresponden a ejecuciones reales.
+     <a href="../../">Volver al dashboard</a></p>
+</header>
+<main>
+
+  <section class="ficha">
+    <header>
+      <span class="n">1</span>
+      <div class="titulo">
+        <h2>01-mvn-test-local.png</h2>
+        <p class="meta">Fig. 2 del informe &middot; 106 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Ejecución local de <code>mvn clean test</code>: las cuatro suites de Calculadora, <b>Tests run: 28</b> y <b>BUILD SUCCESS</b></p>
+    <a href="01-mvn-test-local.png" target="_blank" rel="noopener">
+      <img src="01-mvn-test-local.png" alt="01-mvn-test-local.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">2</span>
+      <div class="titulo">
+        <h2>02-mvn-verify-bdd.png</h2>
+        <p class="meta">Fig. 7 del informe &middot; 128 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Los ocho escenarios BDD en español con sus acentos correctos, <b>Tests run: 8</b> y <b>BUILD SUCCESS</b></p>
+    <a href="02-mvn-verify-bdd.png" target="_blank" rel="noopener">
+      <img src="02-mvn-verify-bdd.png" alt="02-mvn-verify-bdd.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">3</span>
+      <div class="titulo">
+        <h2>02b-escenarios-bdd-smoke.png</h2>
+        <p class="meta">Fig. 8 del informe &middot; 128 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Ejecución selectiva con el filtro <code>@smoke</code>: <b>Skipped: 7</b>, es decir un solo escenario ejecutado</p>
+    <a href="02b-escenarios-bdd-smoke.png" target="_blank" rel="noopener">
+      <img src="02b-escenarios-bdd-smoke.png" alt="02b-escenarios-bdd-smoke.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">4</span>
+      <div class="titulo">
+        <h2>03-reporte-bdd-cucumber.png</h2>
+        <p class="meta">Fig. 11 del informe &middot; 241 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte de Cucumber: <b>8 PASSED</b>, con los escenarios expandidos y la tabla de Ejemplos del Esquema del escenario</p>
+    <a href="03-reporte-bdd-cucumber.png" target="_blank" rel="noopener">
+      <img src="03-reporte-bdd-cucumber.png" alt="03-reporte-bdd-cucumber.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">5</span>
+      <div class="titulo">
+        <h2>04-reporte-surefire.png</h2>
+        <p class="meta">Fig. 5 del informe &middot; 191 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte de Surefire con las <b>28</b> pruebas unitarias, 0 errores y 100 % de éxito</p>
+    <a href="04-reporte-surefire.png" target="_blank" rel="noopener">
+      <img src="04-reporte-surefire.png" alt="04-reporte-surefire.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">6</span>
+      <div class="titulo">
+        <h2>05-reporte-performance-k6.png</h2>
+        <p class="meta">Fig. 13 del informe &middot; 72 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte de k6 con estado <b>APROBADA</b> y cada indicador contrastado con su umbral</p>
+    <a href="05-reporte-performance-k6.png" target="_blank" rel="noopener">
+      <img src="05-reporte-performance-k6.png" alt="05-reporte-performance-k6.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">7</span>
+      <div class="titulo">
+        <h2>07-git-log-ramas.png</h2>
+        <p class="meta">Fig. 1 del informe &middot; 128 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Ramas locales y remotas, y el árbol de commits con los merges <b>PR #3 a #7</b></p>
+    <a href="07-git-log-ramas.png" target="_blank" rel="noopener">
+      <img src="07-git-log-ramas.png" alt="07-git-log-ramas.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">8</span>
+      <div class="titulo">
+        <h2>08-estructura-proyecto.png</h2>
+        <p class="meta">Fig. 3 del informe &middot; 80 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Estructura del proyecto versionado, sin <code>target/</code> ni <code>.git/</code></p>
+    <a href="08-estructura-proyecto.png" target="_blank" rel="noopener">
+      <img src="08-estructura-proyecto.png" alt="08-estructura-proyecto.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">9</span>
+      <div class="titulo">
+        <h2>09-k6-consola.png</h2>
+        <p class="meta">Fig. 12 del informe &middot; 80 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Prueba de carga: <b>APROBADA</b>, 328 peticiones, <b>5,91 TPS</b>, p95 <b>93,90 ms</b> y 0 % de error</p>
+    <a href="09-k6-consola.png" target="_blank" rel="noopener">
+      <img src="09-k6-consola.png" alt="09-k6-consola.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">10</span>
+      <div class="titulo">
+        <h2>11-reporte-failsafe.png</h2>
+        <p class="meta">Fig. 6 del informe &middot; 115 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte de Failsafe con los <b>8</b> escenarios de la suite de aceptación</p>
+    <a href="11-reporte-failsafe.png" target="_blank" rel="noopener">
+      <img src="11-reporte-failsafe.png" alt="11-reporte-failsafe.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">11</span>
+      <div class="titulo">
+        <h2>12-completo-github-actions.jpeg</h2>
+        <p class="meta">— del informe &middot; 1628 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Página completa del run, de la que se recortan las figuras 9, 10 y 16</p>
+    <a href="12-completo-github-actions.jpeg" target="_blank" rel="noopener">
+      <img src="12-completo-github-actions.jpeg" alt="12-completo-github-actions.jpeg" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">12</span>
+      <div class="titulo">
+        <h2>12-github-actions-pipeline.png</h2>
+        <p class="meta">Fig. 9 del informe &middot; 629 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Pipeline en GitHub Actions: las <b>cinco etapas en verde</b> y el detalle de las pruebas unitarias</p>
+    <a href="12-github-actions-pipeline.png" target="_blank" rel="noopener">
+      <img src="12-github-actions-pipeline.png" alt="12-github-actions-pipeline.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">13</span>
+      <div class="titulo">
+        <h2>13-github-actions-metricas.png</h2>
+        <p class="meta">Fig. 10 del informe &middot; 469 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Métricas publicadas por el run: escenarios BDD, <b>cobertura JaCoCo</b> y los seis indicadores de performance</p>
+    <a href="13-github-actions-metricas.png" target="_blank" rel="noopener">
+      <img src="13-github-actions-metricas.png" alt="13-github-actions-metricas.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">14</span>
+      <div class="titulo">
+        <h2>14-completo-dashboard.jpeg</h2>
+        <p class="meta">— del informe &middot; 547 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Página completa del dashboard, de la que se recortan las figuras 14 y 15</p>
+    <a href="14-completo-dashboard.jpeg" target="_blank" rel="noopener">
+      <img src="14-completo-dashboard.jpeg" alt="14-completo-dashboard.jpeg" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">15</span>
+      <div class="titulo">
+        <h2>14-dashboard-publicado.png</h2>
+        <p class="meta">Fig. 14 del informe &middot; 294 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Dashboard en GitHub Pages: <b>28/28</b> unitarias, <b>8/8</b> BDD, <b>cobertura 99,1 %</b>, p95 <b>94 ms</b> y <b>5,91 TPS</b></p>
+    <a href="14-dashboard-publicado.png" target="_blank" rel="noopener">
+      <img src="14-dashboard-publicado.png" alt="14-dashboard-publicado.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">16</span>
+      <div class="titulo">
+        <h2>14b-dashboard-datos.png</h2>
+        <p class="meta">Fig. 15 del informe &middot; 300 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Evolución del percentil 95 por build, la vista de datos en tabla y los enlaces a los reportes navegables</p>
+    <a href="14b-dashboard-datos.png" target="_blank" rel="noopener">
+      <img src="14b-dashboard-datos.png" alt="14b-dashboard-datos.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">17</span>
+      <div class="titulo">
+        <h2>15-github-actions-artefactos.png</h2>
+        <p class="meta">Fig. 16 del informe &middot; 477 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Etapa <b>5 · Alertas automáticas</b> y los cuatro artefactos publicados por el pipeline</p>
+    <a href="15-github-actions-artefactos.png" target="_blank" rel="noopener">
+      <img src="15-github-actions-artefactos.png" alt="15-github-actions-artefactos.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">18</span>
+      <div class="titulo">
+        <h2>16-reporte-cobertura.png</h2>
+        <p class="meta">Fig. 4 del informe &middot; 85 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte de JaCoCo con el detalle por clase: <b>Calculadora al 100 %</b> tras cubrir los métodos que faltaban</p>
+    <a href="16-reporte-cobertura.png" target="_blank" rel="noopener">
+      <img src="16-reporte-cobertura.png" alt="16-reporte-cobertura.png" loading="lazy">
+    </a>
+  </section>
+</main>
+<footer>Taller 1 &middot; Evaluación Unidad II &middot; Willians Melgar</footer>
+</body></html>

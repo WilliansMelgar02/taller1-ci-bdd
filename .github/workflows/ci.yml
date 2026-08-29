@@ -291,7 +291,7 @@ jobs:
       - name: Armar el sitio de reportes
         run: |
           set -euo pipefail
-          mkdir -p sitio/bdd sitio/pruebas sitio/performance sitio/cobertura
+          mkdir -p sitio/bdd sitio/pruebas sitio/performance sitio/cobertura sitio/evidencias
           cp reportes/index.html sitio/index.html
 
           # upload-artifact toma como raiz el ancestro comun de las rutas
@@ -301,13 +301,16 @@ jobs:
           cp -r artefactos/reporte-bdd-cucumber/site/*              sitio/pruebas/
           cp -r artefactos/reporte-bdd-cucumber/site/jacoco/*       sitio/cobertura/
           cp -r artefactos/reporte-performance-k6/*                 sitio/performance/
+          # Las evidencias viajan en el propio repositorio, no en un artefacto:
+          # el indice hace verificable que cada captura respalda lo que se afirma.
+          cp -r docs/evidencias/*                                   sitio/evidencias/
 
           # Verificacion explicita: si un reporte no quedo publicado, el job
           # debe fallar. Un 404 silencioso es peor que un build en rojo.
           for esperado in sitio/index.html sitio/bdd/reporte-bdd.html \
                           sitio/pruebas/surefire.html sitio/pruebas/failsafe.html \
                           sitio/performance/reporte-performance.html \
-                          sitio/cobertura/index.html; do
+                          sitio/cobertura/index.html \n                          sitio/evidencias/index.html; do
             if [ ! -f "$esperado" ]; then
               echo "::error::Falta el reporte esperado: $esperado"; exit 1
             fi
