@@ -166,6 +166,28 @@ git merge --no-ff feature/nombre     # merge que preserva la historia de la rama
 git log --graph --oneline --all      # visualiza el árbol de ramas
 ```
 
+### Scripts de apoyo
+
+El repositorio incluye seis scripts que automatizan tareas repetitivas del
+desarrollo y de la elaboración del informe. Ninguno es necesario para que el
+proyecto compile o pase las pruebas: `mvn verify` funciona por sí solo.
+
+| Script | Para qué sirve |
+|---|---|
+| `preparar-entorno.ps1` | Expone Maven y k6 en la sesión de PowerShell y fija la consola en UTF-8, para que los acentos de los escenarios Gherkin se vean correctamente |
+| `correr-performance.ps1` | Ejecuta la prueba de carga de punta a punta: levanta el servicio, espera a que responda, corre k6 y lo detiene |
+| `mostrar-estructura.ps1` | Muestra la estructura del proyecto partiendo de `git ls-files`, de modo que quedan fuera `target/`, `sitio/` y `.git/` sin necesidad de filtros |
+| `servidor-reportes.js` | Sirve en `localhost:8090` el mismo sitio que el pipeline publica en GitHub Pages, para revisarlo antes de hacer push |
+| `capturar.ps1` | Captura una ventana y la guarda en `docs/evidencias`; admite `-Ventana <título>` para fotografiar el navegador sin cambiar de ventana |
+| `guardar-captura.ps1` | Guarda en `docs/evidencias` la imagen que esté en el portapapeles |
+
+Los dos últimos existen para producir las evidencias de este informe de forma
+reproducible y con nombres consistentes, no para el funcionamiento del proyecto.
+
+> **Nota sobre PowerShell.** Windows deshabilita la ejecución de scripts por
+> defecto. Antes de usarlos hay que ejecutar `Set-ExecutionPolicy -Scope Process
+> Bypass -Force`, que afecta únicamente a la ventana actual.
+
 ### Archivos clave
 
 | Archivo | Qué resuelve |
