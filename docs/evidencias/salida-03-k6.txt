@@ -1,0 +1,31 @@
+PS C:\Users\Lancenterstore\taller1-ci-bdd> node performance/servidor-mock.js &
+[mock] Servicio de login escuchando en http://localhost:8088
+
+PS C:\Users\Lancenterstore\taller1-ci-bdd> k6 run performance/login-carga.js
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+     execution: local
+        script: performance/login-carga.js
+        output: -
+     scenarios: (100.00%) 1 scenario, 10 max VUs, 1m25s max duration (incl. graceful stop):
+              * default: Up to 10 looping VUs for 55s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+==========================================================
+  PRUEBA DE PERFORMANCE - LOGIN        Resultado: APROBADA
+==========================================================
+  Peticiones totales .......... 328
+  Throughput (TPS) ............ 5.85 req/s
+  Latencia promedio ........... 71.80 ms
+  Latencia p95 ................ 89.22 ms   (umbral < 800)
+  Latencia p99 ................ 330.99 ms   (umbral < 1500)
+  Latencia maxima ............. 342.56 ms
+  Tasa de error ............... 0.00 %    (umbral < 1%)
+  Checks correctos ............ 100.00 %    (umbral > 99%)
+  Logins exitosos / rechazados  256 / 72
+  Usuarios virtuales maximos .. 10
+----------------------------------------------------------
+  Umbrales incumplidos: ninguno
+==========================================================

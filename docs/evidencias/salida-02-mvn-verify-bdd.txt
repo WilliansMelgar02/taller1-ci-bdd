@@ -1,0 +1,110 @@
+PS C:\Users\Lancenterstore\taller1-ci-bdd> mvn verify -DskipUnitTests=true
+
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< cl.taller.qa:taller1-ci-bdd >---------------------
+[INFO] Building Taller 1 - Integracion Continua y BDD 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ taller1-ci-bdd ---
+[INFO] skip non existing resourceDirectory C:\Users\Lancenterstore\taller1-ci-bdd\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ taller1-ci-bdd ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ taller1-ci-bdd ---
+[INFO] Copying 2 resources from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ taller1-ci-bdd ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ taller1-ci-bdd ---
+[INFO] Tests are skipped.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ taller1-ci-bdd ---
+[INFO] Building jar: C:\Users\Lancenterstore\taller1-ci-bdd\target\taller1-ci-bdd-1.0.0.jar
+[INFO] 
+[INFO] --- failsafe:3.5.2:integration-test (escenarios-bdd) @ taller1-ci-bdd ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running cl.taller.qa.bdd.EjecutorEscenariosBddIT
+
+@login @smoke @critico
+Escenario: Ingreso exitoso con credenciales válidas                                         # features/login.feature:22
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!"  # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Cuando el cliente intenta ingresar con el usuario "wmelgar" y la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es concedido                                                           # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoConcedido()
+  Y el sistema muestra el mensaje "Bienvenido/a, wmelgar"                                   # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+
+@login @negativo @regresion
+Esquema del escenario: Rechazo de credenciales inválidas                                   # features/login.feature:39
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Cuando el cliente intenta ingresar con el usuario "wmelgar" y la contraseña "1234"       # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es denegado                                                           # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoDenegado()
+  Y el sistema muestra el mensaje "Credenciales inválidas"                                 # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+  Y le quedan 2 intentos disponibles                                                       # cl.taller.qa.bdd.steps.PasosLogin.verificarIntentosRestantes(int)
+
+@login @negativo @regresion
+Esquema del escenario: Rechazo de credenciales inválidas                                    # features/login.feature:40
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!"  # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Cuando el cliente intenta ingresar con el usuario "wmelgar" y la contraseña "segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es denegado                                                            # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoDenegado()
+  Y el sistema muestra el mensaje "Credenciales inválidas"                                  # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+  Y le quedan 2 intentos disponibles                                                        # cl.taller.qa.bdd.steps.PasosLogin.verificarIntentosRestantes(int)
+
+@login @negativo @regresion
+Esquema del escenario: Rechazo de credenciales inválidas                                     # features/login.feature:41
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!"   # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Cuando el cliente intenta ingresar con el usuario "fantasma" y la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es denegado                                                             # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoDenegado()
+  Y el sistema muestra el mensaje "Credenciales inválidas"                                   # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+  Y le quedan 2 intentos disponibles                                                         # cl.taller.qa.bdd.steps.PasosLogin.verificarIntentosRestantes(int)
+
+@login @negativo @regresion
+Esquema del escenario: Rechazo de credenciales inválidas                                   # features/login.feature:42
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Cuando el cliente intenta ingresar con el usuario "" y la contraseña "Segura2026!"       # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es denegado                                                           # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoDenegado()
+  Y el sistema muestra el mensaje "Debe ingresar usuario y contraseña"                     # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+  Y le quedan 3 intentos disponibles                                                       # cl.taller.qa.bdd.steps.PasosLogin.verificarIntentosRestantes(int)
+
+@login @seguridad @critico
+Escenario: Bloqueo de la cuenta tras tres intentos fallidos consecutivos                   # features/login.feature:45
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Cuando el cliente falla el ingreso 3 veces seguidas                                      # cl.taller.qa.bdd.steps.PasosLogin.fallarIngresoVarias(int)
+  Entonces la cuenta del cliente "wmelgar" queda bloqueada                                 # cl.taller.qa.bdd.steps.PasosLogin.verificarCuentaBloqueada(java.lang.String)
+  Y el sistema muestra el mensaje "Cuenta bloqueada por múltiples intentos fallidos"       # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+
+@login @seguridad
+Escenario: La cuenta bloqueada no acepta ni siquiera la contraseña correcta                 # features/login.feature:51
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!"  # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Dado que el cliente falla el ingreso 3 veces seguidas                                     # cl.taller.qa.bdd.steps.PasosLogin.fallarIngresoVarias(int)
+  Cuando el cliente intenta ingresar con el usuario "wmelgar" y la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es denegado                                                            # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoDenegado()
+  Y el sistema muestra el mensaje "Cuenta bloqueada por múltiples intentos fallidos"        # cl.taller.qa.bdd.steps.PasosLogin.verificarMensaje(java.lang.String)
+
+@login @regresion
+Escenario: Un ingreso exitoso reinicia el contador de intentos fallidos                     # features/login.feature:58
+  Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!"  # cl.taller.qa.bdd.steps.PasosLogin.registrarCliente(java.lang.String,java.lang.String)
+  Dado que el cliente falla el ingreso 2 veces seguidas                                     # cl.taller.qa.bdd.steps.PasosLogin.fallarIngresoVarias(int)
+  Cuando el cliente intenta ingresar con el usuario "wmelgar" y la contraseña "Segura2026!" # cl.taller.qa.bdd.steps.PasosLogin.intentarIngresar(java.lang.String,java.lang.String)
+  Entonces el acceso es concedido                                                           # cl.taller.qa.bdd.steps.PasosLogin.verificarAccesoConcedido()
+  Y le quedan 3 intentos disponibles                                                        # cl.taller.qa.bdd.steps.PasosLogin.verificarIntentosRestantes(int)
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.315 s -- in cl.taller.qa.bdd.EjecutorEscenariosBddIT
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- failsafe:3.5.2:verify (escenarios-bdd) @ taller1-ci-bdd ---
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.708 s
+[INFO] Finished at: 2026-08-29T14:03:36-04:00
+[INFO] ------------------------------------------------------------------------
