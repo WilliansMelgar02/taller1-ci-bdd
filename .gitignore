@@ -1,0 +1,64 @@
+# ------------------------------------------------------------------
+# Artefactos de compilación Maven
+# Nunca se versiona lo que el build puede regenerar: evita conflictos
+# y mantiene el repositorio liviano y reproducible.
+# ------------------------------------------------------------------
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+
+# ------------------------------------------------------------------
+# Reportes generados por las pruebas (se publican como artefactos de CI,
+# no como archivos versionados)
+# ------------------------------------------------------------------
+target/surefire-reports/
+target/failsafe-reports/
+target/cucumber-reports/
+target/site/
+allure-results/
+allure-report/
+performance/resultados/
+
+# ------------------------------------------------------------------
+# IDEs y editores
+# ------------------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+nbproject/private/
+
+# ------------------------------------------------------------------
+# Sistema operativo
+# ------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ------------------------------------------------------------------
+# Logs, temporales y secretos
+# ------------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+.env
+.env.local
+credenciales.properties
+
+# ------------------------------------------------------------------
+# Maven wrapper: se versiona el script, no el binario descargado
+# ------------------------------------------------------------------
+.mvn/wrapper/maven-wrapper.jar
+
+# ------------------------------------------------------------------
+# Carpeta de trabajo local para insumos del taller (no se publica)
+# ------------------------------------------------------------------
+_entrada/
