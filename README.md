@@ -123,6 +123,27 @@ taller1-ci-bdd/
 
 - JDK 17 · Maven 3.9+ · Node.js 18+ (para el servidor bajo prueba) · k6 0.5+ (opcional, para la prueba de carga)
 
+### Primer arranque tras clonar el repositorio
+
+```powershell
+git clone https://github.com/WilliansMelgar02/taller1-ci-bdd
+cd taller1-ci-bdd
+
+# Windows bloquea la ejecucion de scripts por defecto. Este ambito afecta
+# solo a la ventana actual: no modifica la configuracion del sistema.
+Set-ExecutionPolicy -Scope Process Bypass -Force
+
+. .preparar-entorno.ps1     # expone Maven y k6, y fija la consola en UTF-8
+mvn verify                   # 14 pruebas unitarias + 8 escenarios BDD
+```
+
+> Si se omite `Set-ExecutionPolicy`, PowerShell responde *"la ejecución de scripts
+> está deshabilitada en este sistema"*. Es la configuración por defecto de Windows,
+> no un problema del proyecto.
+>
+> En Linux o macOS no hace falta ese paso: basta con tener `mvn` en el PATH y
+> ejecutar `mvn verify` directamente. El pipeline lo corre así en ubuntu-latest.
+
 ### Comandos usados en el proyecto
 
 ```bash
