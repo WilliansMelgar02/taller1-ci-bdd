@@ -32,13 +32,30 @@ public class Ventana {
 "@
 }
 
+# Se recuerda la posición del cursor para poder borrar despues los mensajes de
+# este script: si quedaran escritos, apareceria en la evidencia el aviso de la
+# cuenta regresiva en lugar de terminar limpio en el prompt.
+$posicionInicial = $Host.UI.RawUI.CursorPosition
+
 Write-Host ""
 Write-Host "  Pon al frente la ventana que quieres capturar." -ForegroundColor Cyan
 for ($i = $Segundos; $i -ge 1; $i--) {
     Write-Host "`r  Capturando en $i segundos... " -NoNewline -ForegroundColor Yellow
     Start-Sleep -Seconds 1
 }
-Write-Host "`r  Capturando ahora.            " -ForegroundColor Green
+
+# Borrar los mensajes propios y devolver el cursor al prompt
+try {
+    $posicionFinal = $Host.UI.RawUI.CursorPosition
+    $anchoConsola = [Console]::WindowWidth - 1
+    for ($fila = $posicionInicial.Y; $fila -le $posicionFinal.Y; $fila++) {
+        [Console]::SetCursorPosition(0, $fila)
+        Write-Host (' ' * $anchoConsola) -NoNewline
+    }
+    [Console]::SetCursorPosition($posicionInicial.X, $posicionInicial.Y)
+} catch { }
+
+Start-Sleep -Milliseconds 250
 
 if ($PantallaCompleta) {
     $area = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
