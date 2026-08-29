@@ -227,3 +227,148 @@ jobs:
           name: reporte-performance-k6
           path: performance/resultados/
           retention-days: 30
+
+  # ===========================================================================
+  # ETAPA 4 — Publicación del dashboard y los reportes navegables
+  # Reúne los artefactos de las tres etapas anteriores en un único sitio
+  # estático y lo publica en GitHub Pages, de modo que el equipo entre siempre
+  # a la misma URL en lugar de descargar archivos ZIP desde Actions.
+  # ===========================================================================
+  publicar-dashboard:
+    name: 4 · Publicar dashboard y reportes
+    runs-on: ubuntu-latest
+    needs: [ pruebas-unitarias, pruebas-bdd, performance ]
+    if: always() && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Recuperar los artefactos de todas las etapas
+        uses: actions/download-artifact@v4
+        with:
+          path: artefactos
+
+      - name: Armar el sitio de reportes
+        run: |
+          mkdir -p sitio/bdd sitio/pruebas sitio/performance
+          cp reportes/index.html sitio/index.html
+          cp -r artefactos/reporte-bdd-cucumber/target/cucumber-reports/*   sitio/bdd/          2>/dev/null || true
+          cp -r artefactos/reporte-bdd-cucumber/target/site/*               sitio/pruebas/      2>/dev/null || true
+          cp -r artefactos/reporte-performance-k6/*                         sitio/performance/  2>/dev/null || true
+          echo "Contenido publicado:"; find sitio -maxdepth 2 -type f | head -30
+
+      - name: Preparar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir el sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: sitio
+
+      - name: Desplegar en GitHub Pages
+        id: despliegue
+        uses: actions/deploy-pages@v4
+
+  # ===========================================================================
+  # ETAPA 5 — Alertas automáticas
+  # 'if: always()' es imprescindible: este job debe ejecutarse justamente
+  # cuando algo falló, que es cuando los jobs anteriores quedan en 'failure'.
+  # ===========================================================================
+  alertas:
+    name: 5 · Alertas automáticas
+    runs-on: ubuntu-latest
+    needs: [ pruebas-unitarias, pruebas-bdd, performance ]
+    if: always()
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Evaluar el resultado global del pipeline
+        id: estado
+        run: |
+          UNIT="${{ needs.pruebas-unitarias.result }}"
+          BDD="${{ needs.pruebas-bdd.result }}"
+          PERF="${{ needs.performance.result }}"
+          echo "unit=$UNIT"  >> $GITHUB_OUTPUT
+          echo "bdd=$BDD"    >> $GITHUB_OUTPUT
+          echo "perf=$PERF"  >> $GITHUB_OUTPUT
+          if [ "$UNIT" = "success" ] && [ "$BDD" = "success" ] && [ "$PERF" = "success" ]; then
+            echo "global=success" >> $GITHUB_OUTPUT
+          else
+            echo "global=failure" >> $GITHUB_OUTPUT
+          fi
+
+      # --- A1/A2/A5: notificación a Slack ante cualquier fallo -----------------
+      # Requiere el secreto SLACK_WEBHOOK_URL en Settings > Secrets and variables.
+      - name: Alertar a Slack (pipeline fallido)
+        if: steps.estado.outputs.global == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "Sin SLACK_WEBHOOK_URL configurado: se omite la notificacion a Slack."; exit 0
+          fi
+          curl -sf -X POST -H 'Content-type: application/json' "$SLACK_WEBHOOK_URL" -d @- <<JSON
+          {
+            "text": ":rotating_light: *Pipeline FALLIDO* en \`${{ github.ref_name }}\`",
+            "blocks": [
+              { "type": "section", "text": { "type": "mrkdwn",
+                "text": "*Repositorio:* ${{ github.repository }}\n*Autor:* ${{ github.actor }}\n*Commit:* \`${{ github.sha }}\`" } },
+              { "type": "section", "text": { "type": "mrkdwn",
+                "text": "*Unitarias:* ${{ steps.estado.outputs.unit }}\n*BDD:* ${{ steps.estado.outputs.bdd }}\n*Performance:* ${{ steps.estado.outputs.perf }}" } },
+              { "type": "actions", "elements": [
+                { "type": "button", "text": { "type": "plain_text", "text": "Ver el run" },
+                  "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" } ] }
+            ]
+          }
+          JSON
+
+      # --- A3: main roto abre un incidente trazable ---------------------------
+      - name: Abrir incidente si main quedó roto
+        if: steps.estado.outputs.global == 'failure' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[CI] main roto en el build #${context.runNumber}`,
+              labels: ['ci', 'bloqueante'],
+              body: [
+                'El pipeline falló en la rama `main`, por lo que nadie puede desplegar.',
+                '',
+                `- **Commit:** ${context.sha}`,
+                `- **Autor:** @${context.actor}`,
+                `- **Unitarias:** ${{ steps.estado.outputs.unit }}`,
+                `- **BDD:** ${{ steps.estado.outputs.bdd }}`,
+                `- **Performance:** ${{ steps.estado.outputs.perf }}`,
+                '',
+                `[Ver el run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+              ].join('\n')
+            });
+
+      # --- A9: comunicar también la recuperación ------------------------------
+      - name: Registrar el resultado en el resumen del run
+        if: always()
+        run: |
+          if [ "${{ steps.estado.outputs.global }}" = "success" ]; then
+            echo "## ✅ Pipeline en verde" >> $GITHUB_STEP_SUMMARY
+            echo "Unitarias, escenarios BDD y prueba de performance cumplieron todos sus umbrales." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## 🚨 Pipeline fallido — alerta emitida" >> $GITHUB_STEP_SUMMARY
+            echo "| Etapa | Resultado |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| Pruebas unitarias | ${{ steps.estado.outputs.unit }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Escenarios BDD | ${{ steps.estado.outputs.bdd }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Performance | ${{ steps.estado.outputs.perf }} |" >> $GITHUB_STEP_SUMMARY
+          fi
