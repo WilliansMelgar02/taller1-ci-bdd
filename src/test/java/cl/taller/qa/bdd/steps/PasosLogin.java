@@ -1,12 +1,12 @@
-package cl.gespron.taller.bdd.steps;
+package cl.taller.qa.bdd.steps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import cl.gespron.taller.ResultadoAutenticacion;
-import cl.gespron.taller.ServicioAutenticacion;
+import cl.taller.qa.ResultadoAutenticacion;
+import cl.taller.qa.ServicioAutenticacion;
 import io.cucumber.java.es.Cuando;
 import io.cucumber.java.es.Dado;
 import io.cucumber.java.es.Entonces;

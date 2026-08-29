@@ -1,4 +1,4 @@
-package cl.gespron.taller;
+package cl.taller.qa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -1,4 +1,4 @@
-package cl.gespron.taller;
+package cl.taller.qa;
 
 /**
  * Resultado inmutable de un intento de autenticacion.

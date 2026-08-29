@@ -7,7 +7,7 @@
   <!-- ================================================================
        Coordenadas del proyecto
        ================================================================ -->
-  <groupId>cl.gespron.taller</groupId>
+  <groupId>cl.taller.qa</groupId>
   <artifactId>taller1-ci-bdd</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>

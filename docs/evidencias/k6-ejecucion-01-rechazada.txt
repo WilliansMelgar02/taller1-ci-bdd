@@ -1,0 +1,38 @@
+$ k6 run performance/login-carga.js
+(primera ejecución — 29-08-2026 13:47)
+
+==========================================================
+  PRUEBA DE PERFORMANCE - LOGIN        Resultado: RECHAZADA
+==========================================================
+  Peticiones totales .......... 333
+  Throughput (TPS) ............ 5.87 req/s
+  Latencia promedio ........... 70.68 ms
+  Latencia p95 ................ 86.50 ms   (umbral < 800)
+  Latencia p99 ................ 322.23 ms  (umbral < 1500)
+  Latencia maxima ............. 330.62 ms
+  Tasa de error ............... 15.92 %    (umbral < 1%)
+  Checks correctos ............ 94.99 %    (umbral > 99%)
+  Logins exitosos / rechazados  280 / 3
+  Usuarios virtuales maximos .. 10
+----------------------------------------------------------
+  Umbrales incumplidos: checks: rate>0.99 | http_req_failed: rate<0.01 | errores_negocio: rate<0.01
+==========================================================
+level=error msg="thresholds on metrics 'checks, errores_negocio, http_req_failed' have been crossed"
+
+ANÁLISIS DEL FALLO
+------------------
+La latencia estuvo muy por debajo del umbral (p95 = 86 ms contra 800 ms
+permitidos), pero la tasa de error llegó al 15,9 %. La causa NO fue el
+rendimiento: el script reutilizaba siempre el mismo usuario inválido
+("intruso"), por lo que la regla de negocio RN-04 bloqueaba esa cuenta al
+tercer intento y el servicio empezaba a responder 423 (Locked) en lugar
+del 401 esperado.
+
+VALOR DE LA EVIDENCIA
+---------------------
+Esta ejecución demuestra que los umbrales funcionan como quality gate real:
+k6 terminó con código de salida 99 y, en el pipeline, el build se habría
+marcado en rojo automáticamente. También ilustra un error clásico de diseño
+de pruebas de carga: usar datos de prueba que no son independientes entre
+iteraciones. La corrección fue generar un usuario inválido distinto por
+iteración (usuario-VU-ITER), restaurando la atomicidad de cada petición.
