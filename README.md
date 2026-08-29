@@ -404,15 +404,15 @@ export const options = {
 
 | Indicador | Qué mide | Por qué importa | Medido |
 |---|---|---|---|
-| **TPS** | Peticiones completadas por segundo | Es la capacidad real; si cae con la misma carga, algo se degradó | **5,85 req/s** |
-| **Latencia promedio** | Media de tiempos de respuesta | Referencia general; por sí sola engaña | **71,80 ms** |
-| **Latencia p95** | El 95 % responde bajo este tiempo | Indicador contractual: describe al 5 % peor atendido, que es quien reclama | **89,22 ms** |
-| **Latencia p99** | Cola larga | Delata pausas de GC, bloqueos y timeouts intermitentes | **330,99 ms** |
+| **TPS** | Peticiones completadas por segundo | Es la capacidad real; si cae con la misma carga, algo se degradó | **5,91 req/s** |
+| **Latencia promedio** | Media de tiempos de respuesta | Referencia general; por sí sola engaña | **76,16 ms** |
+| **Latencia p95** | El 95 % responde bajo este tiempo | Indicador contractual: describe al 5 % peor atendido, que es quien reclama | **93,90 ms** |
+| **Latencia p99** | Cola larga | Delata pausas de GC, bloqueos y timeouts intermitentes | **329,18 ms** |
 | **Tasa de error** | % de fallas técnicas | Bajo carga aparecen errores invisibles con un solo usuario | **0,00 %** |
-| **Checks funcionales** | % de validaciones de negocio correctas | Responder rápido pero mal no sirve | **100 %** (984/984) |
+| **Checks funcionales** | % de validaciones de negocio correctas | Responder rápido pero mal no sirve | **100 %** |
 
-> **El promedio esconde la cola.** En esta ejecución el promedio fue 71,8 ms y el
-> p99 casi cinco veces más: 331 ms. Si solo mirásemos el promedio, la peor
+> **El promedio esconde la cola.** En esta ejecución el promedio fue 76,2 ms y el
+> p99 más de cuatro veces más: 329 ms. Si solo mirásemos el promedio, la peor
 > experiencia real sería invisible. Por eso el SLA se define sobre el **p95**.
 
 > **Un hallazgo real del taller.** La primera ejecución fue **RECHAZADA** con
@@ -529,14 +529,32 @@ Ejecución real del **29-08-2026**, JDK 17 · Maven 3.9.9 · k6 0.55.0:
 | Performance (k6) | Valor | Umbral | Resultado |
 |---|---|---|---|
 | Peticiones totales | 328 | — | — |
-| Throughput | 5,85 TPS | > 5 | ✅ |
-| Latencia promedio | 71,80 ms | < 400 ms | ✅ |
-| Latencia p95 | 89,22 ms | < 800 ms | ✅ |
-| Latencia p99 | 330,99 ms | < 1500 ms | ✅ |
+| Throughput | 5,91 TPS | > 5 | ✅ |
+| Latencia promedio | 76,16 ms | < 400 ms | ✅ |
+| Latencia p95 | 93,90 ms | < 800 ms | ✅ |
+| Latencia p99 | 329,18 ms | < 1500 ms | ✅ |
 | Tasa de error | 0,00 % | < 1 % | ✅ |
-| Checks funcionales | 984/984 (100 %) | > 99 % | ✅ |
+| Checks funcionales | 100 % | > 99 % | ✅ |
 
 **Resultado global: pipeline en verde, todos los umbrales cumplidos.**
+
+### La misma prueba en el pipeline
+
+La etapa 3 del pipeline ejecuta exactamente la misma prueba en un agente de
+GitHub Actions. Que las cifras sean parecidas pero no idénticas es lo esperado y
+lo deseable: son mediciones reales sobre máquinas distintas, no valores fijos.
+
+| Indicador | Local (Windows) | CI (ubuntu-latest) | Umbral |
+|---|---|---|---|
+| Throughput | 5,91 TPS | 6,00 TPS | > 5 |
+| Latencia media | 76,16 ms | 66,77 ms | < 400 ms |
+| Latencia p95 | 93,90 ms | 79,40 ms | < 800 ms |
+| Latencia p99 | 329,18 ms | 311,44 ms | < 1500 ms |
+| Tasa de error | 0,00 % | 0,00 % | < 1 % |
+| Checks funcionales | 100 % | 100 % | > 99 % |
+
+Si el umbral se cumpliera solo en una de las dos, el problema sería la prueba,
+no el sistema.
 
 ---
 

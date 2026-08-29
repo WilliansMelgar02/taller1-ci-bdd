@@ -116,12 +116,12 @@
     </div>
     <div class="kpi">
       <div class="etiqueta">Latencia p95</div>
-      <div class="valor">89 <span class="unidad">ms</span></div>
+      <div class="valor">94 <span class="unidad">ms</span></div>
       <div class="estado ok">✔ umbral &lt; 800 ms</div>
     </div>
     <div class="kpi">
       <div class="etiqueta">Throughput</div>
-      <div class="valor">5,85 <span class="unidad">TPS</span></div>
+      <div class="valor">5,91 <span class="unidad">TPS</span></div>
       <div class="estado ok">✔ umbral &gt; 5 TPS</div>
     </div>
     <div class="kpi">
@@ -157,24 +157,24 @@
         <text class="valor-directo" x="186" y="31">34,8 ms</text>
 
         <text class="eje" x="140" y="60" text-anchor="end">mediana (p50)</text>
-        <rect x="150" y="49" width="51.8" height="15" rx="4" fill="var(--serie-1)"><title>Mediana: 64,75 ms</title></rect>
-        <text class="valor-directo" x="210" y="61">64,7 ms</text>
+        <rect x="150" y="49" width="52.6" height="15" rx="4" fill="var(--serie-1)"><title>Mediana: 65,80 ms</title></rect>
+        <text class="valor-directo" x="211" y="61">65,8 ms</text>
 
         <text class="eje" x="140" y="90" text-anchor="end">promedio</text>
-        <rect x="150" y="79" width="57.4" height="15" rx="4" fill="var(--serie-1)"><title>Promedio: 71,80 ms</title></rect>
-        <text class="valor-directo" x="216" y="91">71,8 ms</text>
+        <rect x="150" y="79" width="60.9" height="15" rx="4" fill="var(--serie-1)"><title>Promedio: 76,16 ms</title></rect>
+        <text class="valor-directo" x="219" y="91">76,2 ms</text>
 
         <text class="eje" x="140" y="120" text-anchor="end">p90</text>
-        <rect x="150" y="109" width="67.9" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 90: 84,84 ms</title></rect>
-        <text class="valor-directo" x="226" y="121">84,8 ms</text>
+        <rect x="150" y="109" width="70.1" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 90: 87,60 ms</title></rect>
+        <text class="valor-directo" x="228" y="121">87,6 ms</text>
 
         <text class="eje" x="140" y="150" text-anchor="end">p95</text>
-        <rect x="150" y="139" width="71.4" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 95: 89,22 ms — indicador contractual del SLA</title></rect>
-        <text class="valor-directo" x="230" y="151">89,2 ms</text>
+        <rect x="150" y="139" width="75.1" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 95: 93,90 ms — indicador contractual del SLA</title></rect>
+        <text class="valor-directo" x="233" y="151">93,9 ms</text>
 
         <text class="eje" x="140" y="180" text-anchor="end">p99</text>
-        <rect x="150" y="169" width="264.8" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 99: 330,99 ms — la cola larga del 3 % de peticiones lentas</title></rect>
-        <text class="valor-directo" x="423" y="181">331,0 ms</text>
+        <rect x="150" y="169" width="263.3" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 99: 329,18 ms — la cola larga del 3 % de peticiones lentas</title></rect>
+        <text class="valor-directo" x="422" y="181">329,2 ms</text>
       </g>
 
       <!-- umbral SLA -->
@@ -238,8 +238,8 @@
       <text class="etiqueta-umbral" x="421" y="28" text-anchor="middle">⚠ 910 ms · alerta</text>
       <!-- build actual, real -->
       <circle cx="836" cy="193" r="6" fill="var(--serie-1)" stroke="var(--superficie)" stroke-width="2">
-        <title>Build #10 — p95 89,22 ms (medición real)</title></circle>
-      <text class="valor-directo" x="836" y="182" text-anchor="middle">89 ms</text>
+        <title>Build #10 — p95 93,90 ms (medición real)</title></circle>
+      <text class="valor-directo" x="836" y="182" text-anchor="middle">94 ms</text>
 
       <line class="base" x1="60" y1="210" x2="850" y2="210"/>
       <g class="eje" text-anchor="middle">
@@ -264,12 +264,12 @@
       <tr><td>Escenarios BDD ejecutados</td><td class="num">8</td><td class="num">&ge; 2</td><td class="ok">✔ CUMPLE</td><td>Cucumber</td></tr>
       <tr><td>Pruebas fallidas</td><td class="num">0</td><td class="num">0</td><td class="ok">✔ CUMPLE</td><td>Surefire + Failsafe</td></tr>
       <tr><td>Peticiones de carga</td><td class="num">328</td><td class="num">&mdash;</td><td class="ok">✔</td><td>k6</td></tr>
-      <tr><td>Throughput (TPS)</td><td class="num">5,85</td><td class="num">&gt; 5</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Latencia promedio</td><td class="num">71,80 ms</td><td class="num">&lt; 400 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Latencia p95</td><td class="num">89,22 ms</td><td class="num">&lt; 800 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Latencia p99</td><td class="num">330,99 ms</td><td class="num">&lt; 1500 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Throughput (TPS)</td><td class="num">5,91</td><td class="num">&gt; 5</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Latencia promedio</td><td class="num">76,16 ms</td><td class="num">&lt; 400 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Latencia p95</td><td class="num">93,90 ms</td><td class="num">&lt; 800 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Latencia p99</td><td class="num">329,18 ms</td><td class="num">&lt; 1500 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
       <tr><td>Tasa de error técnico</td><td class="num">0,00 %</td><td class="num">&lt; 1 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Checks funcionales bajo carga</td><td class="num">984 / 984</td><td class="num">&gt; 99 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Checks funcionales bajo carga</td><td class="num">100 %</td><td class="num">&gt; 99 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
     </tbody>
   </table>
 
