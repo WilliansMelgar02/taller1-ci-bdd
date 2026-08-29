@@ -310,7 +310,8 @@ jobs:
           for esperado in sitio/index.html sitio/bdd/reporte-bdd.html \
                           sitio/pruebas/surefire.html sitio/pruebas/failsafe.html \
                           sitio/performance/reporte-performance.html \
-                          sitio/cobertura/index.html \n                          sitio/evidencias/index.html; do
+                          sitio/cobertura/index.html \
+                          sitio/evidencias/index.html; do
             if [ ! -f "$esperado" ]; then
               echo "::error::Falta el reporte esperado: $esperado"; exit 1
             fi
