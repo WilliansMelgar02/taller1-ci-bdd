@@ -124,6 +124,10 @@
           </excludes>
           <!-- El pipeline usa -DskipUnitTests=true en la etapa BDD para no repetirlas -->
           <skipTests>${skipUnitTests}</skipTests>
+          <!-- La JVM que se lanza para las pruebas debe escribir en UTF-8:
+               sin esto, los acentos y la enie de los escenarios en espanol
+               salen corruptos en la consola y en los logs del pipeline. -->
+          <argLine>-Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8</argLine>
           <!-- Falla el build ante el primer test roto: politica fail-fast del pipeline -->
           <testFailureIgnore>false</testFailureIgnore>
         </configuration>
@@ -141,6 +145,10 @@
           <includes>
             <include>**/*IT.java</include>
           </includes>
+          <!-- La JVM que se lanza para las pruebas debe escribir en UTF-8:
+               sin esto, los acentos y la enie de los escenarios en espanol
+               salen corruptos en la consola y en los logs del pipeline. -->
+          <argLine>-Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8</argLine>
         </configuration>
         <executions>
           <execution>

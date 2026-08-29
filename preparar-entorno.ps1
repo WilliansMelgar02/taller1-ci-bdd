@@ -14,6 +14,14 @@ $env:PATH = "$env:JAVA_HOME\bin;" +
             "C:\Herramientas\k6-v0.55.0-windows-amd64;" +
             $env:PATH
 
+
+# La consola de Windows usa por defecto una pagina de codigos antigua (850/1252),
+# mientras que Cucumber y Maven escriben en UTF-8. Sin esto, los acentos y la enie
+# de los escenarios en espanol salen como "contraseÃ±a" en lugar de "contrasena".
+chcp 65001 > $null
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$env:MAVEN_OPTS = "-Dfile.encoding=UTF-8"
 Write-Host ""
 Write-Host "  Entorno preparado" -ForegroundColor Green
 Write-Host "  ------------------------------------------------"
