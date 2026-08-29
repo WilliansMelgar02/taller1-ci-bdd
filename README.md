@@ -586,14 +586,19 @@ Todas en [`docs/evidencias/`](docs/evidencias/):
 | Archivo | Qué evidencia |
 |---|---|
 | `01-mvn-test-local.png` | Ejecución local de las pruebas unitarias (14/14) |
-| `02-mvn-verify-bdd.png` | Ejecución local de los escenarios BDD (8/8) |
+| `02-mvn-verify-bdd.png` | Ejecución local de los 8 escenarios BDD |
+| `02b-escenarios-bdd-smoke.png` | Ejecución selectiva por etiqueta: 1 escenario, 7 omitidos |
 | `03-reporte-bdd-cucumber.png` | Reporte navegable de Cucumber |
 | `04-reporte-surefire.png` | Reporte navegable de Surefire |
 | `05-reporte-performance-k6.png` | Reporte navegable de k6 |
-| `06-dashboard-metricas.png` | Dashboard de calidad |
 | `07-git-log-ramas.png` | Árbol de ramas, commits y merges |
-| `08-estructura-proyecto.png` | Estructura de carpetas |
-| `09-k6-consola.png` | Salida de consola de la prueba de carga |
+| `08-estructura-proyecto.png` | Estructura del proyecto versionado |
+| `09-k6-consola.png` | Prueba de carga: 328 peticiones, APROBADA |
+| `11-reporte-failsafe.png` | Reporte navegable de Failsafe |
+| `12-github-actions-pipeline.png` | Pipeline en GitHub Actions: 5 etapas en verde |
+| `13-github-actions-metricas.png` | Resumen de métricas publicado por el run |
+| `14-dashboard-publicado.png` | Dashboard publicado en GitHub Pages |
+| `15-github-actions-artefactos.png` | Alertas, anotaciones y artefactos del run |
 | `k6-ejecucion-01-rechazada.txt` | Ejecución que **incumplió** los umbrales y su análisis |
 | `k6-ejecucion-02-aprobada.txt` | Ejecución que los cumplió tras la corrección |
 | `salida-*.txt` | Salidas de consola íntegras, sin editar |
