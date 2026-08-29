@@ -11,6 +11,11 @@ $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
 Write-Host ""
+# La carpeta de resultados esta en .gitignore porque son archivos generados,
+# de modo que en un clon recien hecho no existe. k6 no crea directorios: si
+# falta, la prueba corre pero no puede escribir sus reportes.
+New-Item -ItemType Directory -Path (Join-Path $PSScriptRoot 'performance/resultados') -Force | Out-Null
+
 Write-Host "  [1/3] Levantando el servicio de login en http://localhost:8088" -ForegroundColor Cyan
 $servidor = Start-Process node -ArgumentList "performance\servidor-mock.js" -PassThru -WindowStyle Hidden
 
