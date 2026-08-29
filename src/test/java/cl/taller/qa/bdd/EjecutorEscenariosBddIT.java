@@ -1,4 +1,4 @@
-package cl.gespron.taller.bdd;
+package cl.taller.qa.bdd;
 
 import org.junit.platform.suite.api.IncludeEngines;
 import org.junit.platform.suite.api.SelectClasspathResource;

@@ -1,4 +1,4 @@
-package cl.gespron.taller;
+package cl.taller.qa;
 
 /**
  * Servicio de operaciones aritmeticas basicas.

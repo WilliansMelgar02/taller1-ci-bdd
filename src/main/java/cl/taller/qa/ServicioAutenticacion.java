@@ -1,4 +1,4 @@
-package cl.gespron.taller;
+package cl.taller.qa;
 
 import java.util.HashMap;
 import java.util.HashSet;
