@@ -62,3 +62,8 @@ credenciales.properties
 # Carpeta de trabajo local para insumos del taller (no se publica)
 # ------------------------------------------------------------------
 _entrada/
+
+# ------------------------------------------------------------------
+# Sitio de reportes armado localmente (lo reconstruye el pipeline)
+# ------------------------------------------------------------------
+sitio/
