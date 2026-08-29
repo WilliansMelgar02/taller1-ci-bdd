@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ================================================================
+       Coordenadas del proyecto
+       ================================================================ -->
+  <groupId>cl.gespron.taller</groupId>
+  <artifactId>taller1-ci-bdd</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>Taller 1 - Integracion Continua y BDD</name>
+  <description>
+    Proyecto de demostracion de integracion continua: pruebas unitarias atomicas con JUnit 5,
+    pruebas de aceptacion BDD con Cucumber, reportes navegables y pipeline automatizado.
+  </description>
+
+  <!-- ================================================================
+       Propiedades centralizadas.
+       Todas las versiones viven aqui: un solo lugar para actualizar
+       dependencias y evitar inconsistencias entre modulos.
+       ================================================================ -->
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <junit.version>5.11.4</junit.version>
+    <junit.platform.version>1.11.4</junit.platform.version>
+    <cucumber.version>7.20.1</cucumber.version>
+
+    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+    <maven.surefire.version>3.5.2</maven.surefire.version>
+    <maven.failsafe.version>3.5.2</maven.failsafe.version>
+    <maven.surefire.report.version>3.5.2</maven.surefire.report.version>
+    <maven.site.version>3.12.1</maven.site.version>
+  </properties>
+
+  <!-- ================================================================
+       Gestion de dependencias mediante BOM.
+       El BOM fija versiones coherentes de toda una familia de artefactos,
+       por lo que las dependencias de abajo no declaran <version>.
+       ================================================================ -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.cucumber</groupId>
+        <artifactId>cucumber-bom</artifactId>
+        <version>${cucumber.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- JUnit 5 (Jupiter): motor de las pruebas unitarias atomicas -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- JUnit Platform Suite: permite declarar la clase runner de Cucumber -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite</artifactId>
+      <version>${junit.platform.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Cucumber: definicion de pasos en Java para los escenarios Gherkin -->
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Motor que integra Cucumber con la JUnit Platform (lo ejecuta Failsafe) -->
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-junit-platform-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Compilacion con Java 17 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven.compiler.plugin.version}</version>
+      </plugin>
+
+      <!-- ============================================================
+           SUREFIRE = pruebas UNITARIAS (rapidas, aisladas, sin I/O).
+           Se excluye explicitamente el paquete bdd para garantizar la
+           separacion de niveles: 'mvn test' solo corre lo unitario.
+           ============================================================ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven.surefire.version}</version>
+        <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/bdd/**</exclude>
+          </excludes>
+          <!-- Falla el build ante el primer test roto: politica fail-fast del pipeline -->
+          <testFailureIgnore>false</testFailureIgnore>
+        </configuration>
+      </plugin>
+
+      <!-- ============================================================
+           FAILSAFE = pruebas de ACEPTACION / BDD (Cucumber).
+           Corren en la fase 'integration-test' con 'mvn verify'.
+           ============================================================ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven.failsafe.version}</version>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>escenarios-bdd</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Genera el sitio/reportes HTML navegables en target/site -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>${maven.site.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!-- ================================================================
+       Reporting: 'mvn site' produce el reporte HTML navegable de Surefire
+       y Failsafe (resumen, detalle por clase y por caso de prueba).
+       ================================================================ -->
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <version>${maven.surefire.report.version}</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>report-only</report>
+              <report>failsafe-report-only</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+</project>
