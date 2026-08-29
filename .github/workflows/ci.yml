@@ -156,3 +156,74 @@ jobs:
             target/cucumber-reports/
             target/site/
           retention-days: 30
+
+  # ===========================================================================
+  # ETAPA 3 — Prueba de performance (k6)
+  # Corre en paralelo a la etapa BDD: ambas dependen de las unitarias, pero
+  # no entre sí, así que no tiene sentido serializarlas.
+  # ===========================================================================
+  performance:
+    name: 3 · Prueba de performance (k6)
+    runs-on: ubuntu-latest
+    needs: pruebas-unitarias
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js (servidor bajo prueba)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Levantar el servicio de login y esperar a que responda
+        run: |
+          mkdir -p performance/resultados
+          node performance/servidor-mock.js &
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8088/health > /dev/null; then
+              echo "Servicio arriba tras $i intento(s)"; exit 0
+            fi
+            sleep 1
+          done
+          echo "El servicio no respondió a tiempo"; exit 1
+
+      # Si algún umbral (p95, tasa de error, TPS) se incumple, k6 devuelve
+      # código 99 y este paso rompe el build: el SLA es un quality gate.
+      - name: Ejecutar la prueba de carga
+        run: k6 run performance/login-carga.js
+
+      - name: Publicar indicadores en el resumen del pipeline
+        if: always()
+        run: |
+          echo "## Prueba de performance — POST /api/login" >> $GITHUB_STEP_SUMMARY
+          if [ -f performance/resultados/indicadores.json ]; then
+            node -e '
+              const d = require("./performance/resultados/indicadores.json");
+              const n = (x, k = 2) => Number(x).toFixed(k);
+              const fila = (m, v, u, ok) =>
+                `| ${m} | ${v} | ${u} | ${ok ? "✅ CUMPLE" : "❌ NO CUMPLE"} |`;
+              console.log("| Indicador | Valor | Umbral | Resultado |");
+              console.log("|---|---|---|---|");
+              console.log(fila("Throughput (TPS)", n(d.tps) + " req/s", "> 5", d.tps > 5));
+              console.log(fila("Latencia media", n(d.latencia_promedio_ms) + " ms", "< 400 ms", d.latencia_promedio_ms < 400));
+              console.log(fila("Latencia p95", n(d.latencia_p95_ms) + " ms", "< 800 ms", d.latencia_p95_ms < 800));
+              console.log(fila("Latencia p99", n(d.latencia_p99_ms) + " ms", "< 1500 ms", d.latencia_p99_ms < 1500));
+              console.log(fila("Tasa de error", n(d.tasa_error * 100) + " %", "< 1 %", d.tasa_error < 0.01));
+              console.log(fila("Checks funcionales", n(d.checks_ok * 100) + " %", "> 99 %", d.checks_ok > 0.99));
+            ' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No se generaron indicadores: la prueba no alcanzó a completarse." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Guardar reporte de performance
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-performance-k6
+          path: performance/resultados/
+          retention-days: 30
