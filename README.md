@@ -5,6 +5,7 @@
 **Autor:** Willians Eduardo Melgar Cherres
 **Asignatura:** Automatización de Pruebas — Unidad II
 **Repositorio:** <https://github.com/WilliansMelgar02/taller1-ci-bdd>
+**Dashboard publicado:** <https://williansmelgar02.github.io/taller1-ci-bdd/>
 
 ---
 

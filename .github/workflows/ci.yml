@@ -267,6 +267,9 @@ jobs:
 
       - name: Preparar GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          # Habilita Pages en el repositorio si aun no lo estaba, en lugar de fallar.
+          enablement: true
 
       - name: Subir el sitio
         uses: actions/upload-pages-artifact@v3
