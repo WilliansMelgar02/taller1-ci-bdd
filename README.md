@@ -599,9 +599,6 @@ Todas en [`docs/evidencias/`](docs/evidencias/):
 | `13-github-actions-metricas.png` | Resumen de métricas publicado por el run |
 | `14-dashboard-publicado.png` | Dashboard publicado en GitHub Pages |
 | `15-github-actions-artefactos.png` | Alertas, anotaciones y artefactos del run |
-| `k6-ejecucion-01-rechazada.txt` | Ejecución que **incumplió** los umbrales y su análisis |
-| `k6-ejecucion-02-aprobada.txt` | Ejecución que los cumplió tras la corrección |
-| `salida-*.txt` | Salidas de consola íntegras, sin editar |
 
 Las capturas del pipeline ejecutándose en GitHub Actions se agregan tras el
 primer `push` al repositorio remoto.
