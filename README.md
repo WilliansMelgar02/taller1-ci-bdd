@@ -53,6 +53,7 @@ realmente**, y las cifras que aparecen provienen de esas ejecuciones.
 | **JUnit 5 (Jupiter)** | 5.11.4 | `@DisplayName` documenta la intención; `@ParameterizedTest` evita duplicar pruebas |
 | **Cucumber** | 7.20.1 | Traduce los ejemplos de la sesión Three Amigos a pruebas ejecutables sin perder el lenguaje de negocio |
 | **Surefire / Failsafe** | 3.5.2 | Separan pruebas unitarias de pruebas de aceptación: distinto costo, distinta etapa |
+| **JaCoCo** | 0.8.12 | Mide qué código ejercitan realmente las pruebas; su umbral también rompe el build |
 | **k6** | 0.55.0 | Prueba de carga *como código*, versionable y con umbrales que rompen el build |
 | **GitHub Actions** | — | Pipeline as Code, integrado al repositorio y a los Pull Requests |
 | **Jenkins** | (declarativo) | Se incluye el `Jenkinsfile` equivalente para demostrar que la estrategia no depende de la herramienta |
@@ -284,7 +285,61 @@ class CalculadoraSumaTest {
 | **Bajo acoplamiento** | Las suites no se conocen entre sí; `Calculadora` no depende de ninguna otra clase |
 | Sin recursos externos | Sin base de datos, red ni archivos: ejecución determinista |
 
-### 5.4 `.gitignore`
+### 5.4 Cobertura de código
+
+Se integró **JaCoCo** para medir qué porcentaje del código de producción
+ejercitan realmente las pruebas. El agente se engancha a la JVM de Surefire y
+de Failsafe, de modo que el reporte combina la cobertura de las **pruebas
+unitarias y de los escenarios BDD** en un solo número.
+
+```xml
+<rules>
+  <rule>
+    <element>BUNDLE</element>          <!-- el proyecto completo -->
+    <limits>
+      <limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit>
+      <limit><counter>BRANCH</counter>     <value>COVEREDRATIO</value><minimum>0.70</minimum></limit>
+    </limits>
+  </rule>
+  <rule>
+    <element>CLASS</element>           <!-- y además cada clase por separado -->
+    <limits>
+      <limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit>
+    </limits>
+  </rule>
+</rules>
+```
+
+> **Por qué dos reglas y no una.** Al configurar solo el umbral global, el
+> build pasaba con un 91 % de cobertura total… mientras la clase `Calculadora`
+> estaba al **39 %**, porque los métodos `multiplicar()` y `dividir()` no tenían
+> ninguna prueba. El promedio del proyecto los escondía, exactamente igual que
+> el promedio de latencia esconde el percentil 99.
+>
+> Al agregar la regla por clase, el build falló:
+>
+> ```
+> [WARNING] Rule violated for class cl.taller.qa.Calculadora:
+>           instructions covered ratio is 0.39, but expected minimum is 0.70
+> [INFO] BUILD FAILURE
+> ```
+>
+> La corrección no fue bajar el umbral, sino escribir las pruebas que faltaban
+> (`CalculadoraMultiplicacionTest` y `CalculadoraDivisionTest`, 14 casos más,
+> incluido el borde de dividir por cero). **Un umbral que se baja cuando molesta
+> deja de ser un control.**
+
+| Clase | Antes | Después |
+|---|---|---|
+| `Calculadora` | 39,3 % | **100 %** |
+| `ServicioAutenticacion` | 98,8 % | 98,8 % |
+| `ResultadoAutenticacion` | 100 % | 100 % |
+| **Total del proyecto** | 91,0 % | **99,1 %** |
+
+El reporte HTML navegable queda en `target/site/jacoco/index.html` y el pipeline
+lo publica en GitHub Pages junto con el resto.
+
+### 5.5 `.gitignore`
 
 Excluye lo regenerable (`target/`), los reportes (`cucumber-reports/`,
 `allure-results/`), la configuración personal de IDE (`.idea/`, `.vscode/`),
@@ -292,7 +347,7 @@ los archivos del sistema operativo y, sobre todo, los **secretos** (`.env`,
 `credenciales.properties`). Se versiona el *script* del Maven wrapper pero no su
 binario descargado.
 
-### 5.5 Pipeline de CI
+### 5.6 Pipeline de CI
 
 Ver la sección [7. El pipeline explicado etapa por etapa](#7-el-pipeline-explicado-etapa-por-etapa).
 
@@ -523,6 +578,7 @@ debe existir*.
 | **Unitarias · Surefire** | maven-surefire-report-plugin | `target/site/surefire.html` | Resumen, detalle por clase y por caso |
 | **Aceptación · Failsafe** | maven-failsafe-plugin | `target/site/failsafe.html` | Resultado de la suite de integración |
 | **Performance · k6** | `handleSummary()` propio | `performance/resultados/reporte-performance.html` | Indicadores frente a los umbrales del SLA |
+| **Cobertura · JaCoCo** | jacoco-maven-plugin | `target/site/jacoco/index.html` | Cobertura por clase, método y línea |
 | **Dashboard de calidad** | Proyecto | `reportes/index.html` | Vista unificada funcional + performance |
 
 Los formatos secundarios (`cucumber.json`, `cucumber-junit.xml`,
@@ -543,9 +599,9 @@ Ejecución real del **29-08-2026**, JDK 17 · Maven 3.9.9 · k6 0.55.0:
 
 | Suite | Ejecutadas | Fallos | Errores | Tiempo |
 |---|---|---|---|---|
-| Pruebas unitarias (Surefire) | **14** | 0 | 0 | 0,08 s |
+| Pruebas unitarias (Surefire) | **28** | 0 | 0 | 0,13 s |
 | Escenarios BDD (Failsafe + Cucumber) | **8** | 0 | 0 | 0,30 s |
-| **Total funcional** | **22** | **0** | **0** | — |
+| **Total funcional** | **36** | **0** | **0** | — |
 
 | Performance (k6) | Valor | Umbral | Resultado |
 |---|---|---|---|

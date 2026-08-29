@@ -37,6 +37,12 @@
     <maven.failsafe.version>3.5.2</maven.failsafe.version>
     <maven.surefire.report.version>3.5.2</maven.surefire.report.version>
     <maven.site.version>3.12.1</maven.site.version>
+    <jacoco.version>0.8.12</jacoco.version>
+
+    <!-- Umbrales de cobertura que actuan como quality gate -->
+    <cobertura.instrucciones.minima>0.80</cobertura.instrucciones.minima>
+    <cobertura.ramas.minima>0.70</cobertura.ramas.minima>
+    <cobertura.clase.minima>0.70</cobertura.clase.minima>
 
     <!-- Permite al pipeline ejecutar solo la etapa BDD sin repetir las unitarias -->
     <skipUnitTests>false</skipUnitTests>
@@ -127,7 +133,7 @@
           <!-- La JVM que se lanza para las pruebas debe escribir en UTF-8:
                sin esto, los acentos y la enie de los escenarios en espanol
                salen corruptos en la consola y en los logs del pipeline. -->
-          <argLine>-Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8</argLine>
+          <argLine>@{argLine} -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8</argLine>
           <!-- Falla el build ante el primer test roto: politica fail-fast del pipeline -->
           <testFailureIgnore>false</testFailureIgnore>
         </configuration>
@@ -148,7 +154,7 @@
           <!-- La JVM que se lanza para las pruebas debe escribir en UTF-8:
                sin esto, los acentos y la enie de los escenarios en espanol
                salen corruptos en la consola y en los logs del pipeline. -->
-          <argLine>-Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8</argLine>
+          <argLine>@{argLine} -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8</argLine>
         </configuration>
         <executions>
           <execution>
@@ -161,6 +167,81 @@
         </executions>
       </plugin>
 
+
+      <!-- ============================================================
+           JACOCO = cobertura de codigo.
+           El agente se engancha a la JVM de las pruebas (de ahi el
+           @{argLine} en Surefire y Failsafe) y acumula la cobertura de
+           ambos niveles en un mismo archivo, por lo que el reporte
+           refleja lo que cubren las unitarias MAS los escenarios BDD.
+
+           La cobertura no es un fin en si misma: un 100% no garantiza
+           que las pruebas sean buenas. Se usa como red de seguridad
+           para detectar codigo de produccion que nadie esta ejercitando.
+           ============================================================ -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>preparar-agente</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>reporte-cobertura</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+          <!-- Quality gate: si la cobertura baja del umbral, el build falla
+               y el merge queda bloqueado. Un umbral que no rompe el build
+               es una sugerencia, no un control. -->
+          <execution>
+            <id>verificar-umbral-de-cobertura</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>INSTRUCTION</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${cobertura.instrucciones.minima}</minimum>
+                    </limit>
+                    <limit>
+                      <counter>BRANCH</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${cobertura.ramas.minima}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+                <!-- Regla por clase: un umbral global se cumple aunque una
+                     clase concreta este casi sin cubrir, porque el promedio
+                     la esconde. Esta segunda regla obliga a que ninguna
+                     clase quede por debajo del minimo. -->
+                <rule>
+                  <element>CLASS</element>
+                  <limits>
+                    <limit>
+                      <counter>INSTRUCTION</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>${cobertura.clase.minima}</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!-- Genera el sitio/reportes HTML navegables en target/site -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

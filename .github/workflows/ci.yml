@@ -118,9 +118,13 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: maven
 
-      # -DskipUnitTests=true evita repetir las unitarias que ya pasaron en la etapa 1.
-      - name: Ejecutar escenarios BDD (Failsafe + Cucumber)
-        run: mvn -B -ntp verify -DskipUnitTests=true
+      # Aqui NO se usa -DskipUnitTests: el reporte de cobertura debe combinar
+      # lo que cubren las pruebas unitarias y los escenarios BDD, y para eso
+      # ambos niveles tienen que correr en la misma ejecucion, escribiendo al
+      # mismo archivo jacoco.exec. Repetir las unitarias cuesta decimas de
+      # segundo; perder la mitad de la cobertura costaria mucho mas.
+      - name: Ejecutar escenarios BDD y medir cobertura
+        run: mvn -B -ntp verify
 
       - name: Generar reporte HTML navegable (Surefire y Failsafe)
         if: always()
@@ -146,6 +150,34 @@ jobs:
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Escenarios ejecutados | $TOTAL |" >> $GITHUB_STEP_SUMMARY
           echo "| Escenarios fallidos | ${FALLOS:-0} |" >> $GITHUB_STEP_SUMMARY
+
+      # La cobertura se publica junto al resto de las metricas: un numero que
+      # hay que ir a buscar a un artefacto ZIP es un numero que nadie mira.
+      - name: Publicar la cobertura en el resumen del pipeline
+        if: always()
+        run: |
+          ARCHIVO=target/site/jacoco/jacoco.csv
+          if [ ! -f "$ARCHIVO" ]; then
+            echo "No se genero el reporte de cobertura." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "## Cobertura de código (JaCoCo)" >> $GITHUB_STEP_SUMMARY
+          echo "| Métrica | Cubierto | Total | Porcentaje | Umbral |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          node -e '
+            const filas = require("fs").readFileSync("target/site/jacoco/jacoco.csv", "utf8")
+              .trim().split("\n").slice(1).map(l => l.split(","));
+            const suma = (i) => filas.reduce((t, f) => t + Number(f[i]), 0);
+            const fila = (etiqueta, perdido, cubierto, umbral) => {
+              const total = perdido + cubierto;
+              if (!total) return;
+              const pct = (cubierto * 100 / total).toFixed(1);
+              console.log(`| ${etiqueta} | ${cubierto} | ${total} | ${pct} % | ${umbral} |`);
+            };
+            fila("Instrucciones", suma(3), suma(4), "80 %");
+            fila("Ramas", suma(5), suma(6), "70 %");
+            fila("Líneas", suma(7), suma(8), "—");
+          ' >> $GITHUB_STEP_SUMMARY
 
       - name: Guardar reporte navegable de BDD
         uses: actions/upload-artifact@v4
@@ -259,7 +291,7 @@ jobs:
       - name: Armar el sitio de reportes
         run: |
           set -euo pipefail
-          mkdir -p sitio/bdd sitio/pruebas sitio/performance
+          mkdir -p sitio/bdd sitio/pruebas sitio/performance sitio/cobertura
           cp reportes/index.html sitio/index.html
 
           # upload-artifact toma como raiz el ancestro comun de las rutas
@@ -267,13 +299,15 @@ jobs:
           # y 'site/' en su raiz, sin el prefijo 'target/'.
           cp -r artefactos/reporte-bdd-cucumber/cucumber-reports/*  sitio/bdd/
           cp -r artefactos/reporte-bdd-cucumber/site/*              sitio/pruebas/
+          cp -r artefactos/reporte-bdd-cucumber/site/jacoco/*       sitio/cobertura/
           cp -r artefactos/reporte-performance-k6/*                 sitio/performance/
 
           # Verificacion explicita: si un reporte no quedo publicado, el job
           # debe fallar. Un 404 silencioso es peor que un build en rojo.
           for esperado in sitio/index.html sitio/bdd/reporte-bdd.html \
                           sitio/pruebas/surefire.html sitio/pruebas/failsafe.html \
-                          sitio/performance/reporte-performance.html; do
+                          sitio/performance/reporte-performance.html \
+                          sitio/cobertura/index.html; do
             if [ ! -f "$esperado" ]; then
               echo "::error::Falta el reporte esperado: $esperado"; exit 1
             fi

@@ -101,7 +101,7 @@
   <div class="kpis">
     <div class="kpi">
       <div class="etiqueta">Pruebas unitarias</div>
-      <div class="valor">14 <span class="unidad">/ 14</span></div>
+      <div class="valor">28 <span class="unidad">/ 28</span></div>
       <div class="estado ok">✔ 0 fallos</div>
     </div>
     <div class="kpi">
@@ -112,7 +112,7 @@
     <div class="kpi">
       <div class="etiqueta">Tasa de éxito</div>
       <div class="valor">100 <span class="unidad">%</span></div>
-      <div class="pie">22 pruebas totales</div>
+      <div class="pie">36 pruebas totales</div>
     </div>
     <div class="kpi">
       <div class="etiqueta">Latencia p95</div>
@@ -123,6 +123,11 @@
       <div class="etiqueta">Throughput</div>
       <div class="valor">5,91 <span class="unidad">TPS</span></div>
       <div class="estado ok">✔ umbral &gt; 5 TPS</div>
+    </div>
+    <div class="kpi">
+      <div class="etiqueta">Cobertura</div>
+      <div class="valor">99,1 <span class="unidad">%</span></div>
+      <div class="estado ok">&#10003; umbral &gt; 80 %</div>
     </div>
     <div class="kpi">
       <div class="etiqueta">Tasa de error</div>
@@ -260,7 +265,7 @@
       <tr><th>Métrica</th><th class="num">Valor medido</th><th class="num">Umbral</th><th>Resultado</th><th>Origen</th></tr>
     </thead>
     <tbody>
-      <tr><td>Pruebas unitarias ejecutadas</td><td class="num">14</td><td class="num">&ge; 2</td><td class="ok">✔ CUMPLE</td><td>Surefire</td></tr>
+      <tr><td>Pruebas unitarias ejecutadas</td><td class="num">28</td><td class="num">&ge; 2</td><td class="ok">✔ CUMPLE</td><td>Surefire</td></tr>
       <tr><td>Escenarios BDD ejecutados</td><td class="num">8</td><td class="num">&ge; 2</td><td class="ok">✔ CUMPLE</td><td>Cucumber</td></tr>
       <tr><td>Pruebas fallidas</td><td class="num">0</td><td class="num">0</td><td class="ok">✔ CUMPLE</td><td>Surefire + Failsafe</td></tr>
       <tr><td>Peticiones de carga</td><td class="num">328</td><td class="num">&mdash;</td><td class="ok">✔</td><td>k6</td></tr>
@@ -269,6 +274,8 @@
       <tr><td>Latencia p95</td><td class="num">93,90 ms</td><td class="num">&lt; 800 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
       <tr><td>Latencia p99</td><td class="num">329,18 ms</td><td class="num">&lt; 1500 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
       <tr><td>Tasa de error técnico</td><td class="num">0,00 %</td><td class="num">&lt; 1 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Cobertura de instrucciones</td><td class="num">99,1 %</td><td class="num">&gt; 80 %</td><td class="ok">&#10003; CUMPLE</td><td>JaCoCo</td></tr>
+      <tr><td>Clase peor cubierta</td><td class="num">98,8 %</td><td class="num">&gt; 70 %</td><td class="ok">&#10003; CUMPLE</td><td>JaCoCo</td></tr>
       <tr><td>Checks funcionales bajo carga</td><td class="num">100 %</td><td class="num">&gt; 99 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
     </tbody>
   </table>
@@ -288,6 +295,10 @@
     <a class="enlace" href="./pruebas/failsafe.html">
       <strong>Pruebas de aceptación · Failsafe</strong>
       <span>Resultado de la suite de integración</span>
+    </a>
+    <a class="enlace" href="./cobertura/index.html">
+      <strong>Cobertura &middot; JaCoCo</strong>
+      <span>Detalle por clase, metodo y linea</span>
     </a>
     <a class="enlace" href="./performance/reporte-performance.html">
       <strong>Performance · k6</strong>
