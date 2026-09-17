@@ -1,0 +1,9 @@
+{
+  "tipo": "rollback-manual",
+  "version": "1.1.0-4c77e2c",
+  "motivo": "Demostracion del examen: restaurar la version promovida tras el PR 7",
+  "actor": "WilliansMelgar02",
+  "resultado": "success",
+  "ejecucion": "35171829540",
+  "fecha": "2026-09-17T01:47:00Z"
+}
