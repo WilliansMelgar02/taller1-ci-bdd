@@ -116,15 +116,16 @@ pipeline {
 
         stage('Prueba de performance') {
             steps {
-                // Servidor y prueba en el MISMO 'sh': Jenkins termina los procesos
-                // en segundo plano al finalizar cada paso.
+                // Se mide el jar real. Portal y prueba en el MISMO 'sh': Jenkins
+                // termina los procesos en segundo plano al finalizar cada paso.
                 sh '''
+                    mvn -B -ntp package -DskipTests
                     mkdir -p performance/resultados
-                    node performance/servidor-mock.js &
-                    SERVIDOR=$!
-                    trap 'kill $SERVIDOR' EXIT
-                    for i in $(seq 1 20); do
-                      curl -sf http://localhost:8088/health > /dev/null && break
+                    java -jar target/portal-clientes.jar > performance/resultados/portal.log 2>&1 &
+                    PORTAL=$!
+                    trap 'kill $PORTAL' EXIT
+                    for i in $(seq 1 30); do
+                      curl -sf http://localhost:8080/health > /dev/null && break
                       sleep 1
                     done
                     k6 run performance/login-carga.js

@@ -224,6 +224,8 @@ jobs:
   # ETAPA 3 — Prueba de performance (k6)
   # Corre en paralelo a la etapa de integración: ambas dependen de las unitarias, pero
   # no entre sí, así que no tiene sentido serializarlas.
+  # Mide la aplicación REAL (el mismo jar que se despliega), no una simulación:
+  # un SLA medido sobre otra cosa no garantiza nada del artefacto entregado.
   # ===========================================================================
   performance:
     name: 3 · Prueba de performance (k6)
@@ -235,7 +237,14 @@ jobs:
       - name: Descargar el código del repositorio
         uses: actions/checkout@v4
 
-      - name: Preparar Node.js (servidor bajo prueba)
+      - name: Preparar JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Preparar Node.js (resumen de indicadores)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -243,17 +252,20 @@ jobs:
       - name: Instalar k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Levantar el servicio de login y esperar a que responda
+      - name: Empaquetar el portal
+        run: mvn -B -ntp package -DskipTests
+
+      - name: Levantar el portal y esperar a que responda
         run: |
           mkdir -p performance/resultados
-          node performance/servidor-mock.js &
-          for i in $(seq 1 20); do
-            if curl -sf http://localhost:8088/health > /dev/null; then
-              echo "Servicio arriba tras $i intento(s)"; exit 0
+          java -jar target/portal-clientes.jar > performance/resultados/portal.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health > /dev/null; then
+              echo "Portal arriba tras $i intento(s)"; exit 0
             fi
             sleep 1
           done
-          echo "El servicio no respondió a tiempo"; exit 1
+          echo "El portal no respondió a tiempo"; cat performance/resultados/portal.log; exit 1
 
       # Si algún umbral (p95, tasa de error, TPS) se incumple, k6 devuelve
       # código 99 y este paso rompe el build: el SLA es un quality gate.
