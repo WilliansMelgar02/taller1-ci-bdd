@@ -11,9 +11,13 @@
  * confirmar que el sistema cumple el acuerdo de nivel de servicio bajo la
  * carga normal de un día hábil, no encontrar su punto de quiebre.
  *
+ * Sistema bajo prueba: el jar real del portal (el mismo artefacto que se
+ * despliega), no una simulación.
+ *
  * Ejecución:
- *   node performance/servidor-mock.js &
- *   k6 run performance/login-carga.js
+ *   mvn package -DskipTests
+ *   java -jar target/portal-clientes.jar &
+ *   k6 run performance/login-carga.js          (o bien: .correr-performance.ps1)
  * ---------------------------------------------------------------------------
  */
 import http from 'k6/http';
@@ -30,7 +34,7 @@ const tasaErrorNegocio = new Rate('errores_negocio');           // % de respuest
 const loginsExitosos   = new Counter('logins_exitosos');        // throughput útil
 const loginsRechazados = new Counter('logins_rechazados');      // credenciales inválidas
 
-const URL_BASE = __ENV.URL_BASE || 'http://localhost:8088';
+const URL_BASE = __ENV.URL_BASE || 'http://localhost:8080';
 
 // ---------------------------------------------------------------------------
 // CLASIFICACIÓN DE RESPUESTAS
@@ -215,7 +219,7 @@ export function handleSummary(data) {
     'footer{padding:16px 32px;font-size:12px;color:#6b7684}\n' +
     '</style></head><body>\n<header>\n' +
     '<h1>Reporte de Performance &mdash; Endpoint POST /api/login</h1>\n' +
-    '<p>Generado por k6 el ' + new Date().toLocaleString('es-CL') + ' &middot; Taller 1, Unidad II</p>\n' +
+    '<p>Generado por k6 el ' + new Date().toLocaleString('es-CL') + ' &middot; Portal de Clientes</p>\n' +
     '<div class="estado">' + estado + '</div>\n</header>\n<main>\n' +
     '<div class="tarjetas">\n' +
     '<div class="tarjeta"><span>Throughput</span><strong>' + n(indicadores.tps) + '</strong> TPS</div>\n' +
