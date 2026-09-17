@@ -1,0 +1,5 @@
+# El contexto de construcción solo necesita el jar ya probado.
+# Todo lo demás (código fuente, reportes, .git) queda fuera de la imagen:
+# builds más rápidos y ningún archivo sensible filtrado por accidente.
+*
+!target/portal-clientes.jar
