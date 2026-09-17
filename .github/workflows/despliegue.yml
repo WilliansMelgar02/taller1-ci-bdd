@@ -1,0 +1,332 @@
+# =============================================================================
+#  Deployment Pipeline — Blue-Green con rollback automático (Actividad 3)
+#
+#  Continúa donde termina el pipeline de CI: toma un commit que ya pasó las
+#  pruebas unitarias, de integración y BDD, y lo lleva hasta un ambiente de
+#  pruebas donde se valida como lo usaría un cliente.
+#
+#    ┌──────────────┐   ┌──────────────────────────────────────────────┐   ┌──────────┐
+#    │ 1. Empaquetar│──►│ 2. Staging Blue-Green                        │──►│3.Promover│
+#    │  jar + imagen│   │  estable→BLUE · candidata→GREEN · health     │   │ estable  │
+#    │  versionada  │   │  Acceptance Gate (Selenium+API) contra GREEN │   │ + release│
+#    └──────────────┘   │  switch de tráfico · smoke test por el proxy │   └──────────┘
+#                       │  ✖ cualquier fallo ──► infra/rollback.sh     │
+#                       └──────────────────────────────────────────────┘
+#
+#  Disparadores:
+#    - CI en verde sobre main  → despliegue completo y promoción a estable.
+#    - Pull Request a main     → mismo despliegue, SIN promoción: cada cambio
+#                                prueba en staging antes de integrarse.
+#    - Manual (workflow_dispatch).
+# =============================================================================
+name: Deployment Pipeline - Blue-Green
+
+on:
+  workflow_run:
+    workflows: [ "CI - Pruebas Automatizadas" ]
+    types: [ completed ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    paths-ignore: [ '**.md', 'docs/**' ]
+  workflow_dispatch:
+
+# Un despliegue nunca se cancela a medias: dejaría el ambiente en un estado
+# intermedio. Las ejecuciones de un mismo PR (o de main) esperan su turno.
+concurrency:
+  group: despliegue-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+
+  # ===========================================================================
+  # ETAPA 1 — Package Artefact
+  # Se construye UNA sola vez. La imagen queda en el registro con una etiqueta
+  # inmutable (versión + commit): es la que se prueba y la que se promueve.
+  # Nunca se despliega 'latest': con una etiqueta móvil no hay a qué volver.
+  # ===========================================================================
+  empaquetar:
+    name: 1 · Empaquetar jar e imagen Docker
+    # Si llega desde el CI, solo continúa cuando el CI terminó en verde.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      version: ${{ steps.artefacto.outputs.version }}
+      version-base: ${{ steps.artefacto.outputs.version-base }}
+      commit: ${{ steps.artefacto.outputs.commit }}
+      repositorio-imagen: ${{ steps.artefacto.outputs.repositorio-imagen }}
+      imagen: ${{ steps.artefacto.outputs.imagen }}
+
+    steps:
+      - name: Descargar el commit que aprobó el CI
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Preparar JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Calcular la versión del artefacto
+        id: artefacto
+        run: |
+          VERSION_BASE=$(mvn -B -ntp -q help:evaluate -Dexpression=project.version -DforceStdout)
+          COMMIT=$(git rev-parse HEAD)
+          VERSION="${VERSION_BASE}-${COMMIT:0:7}"
+          # Los nombres de imagen en GHCR deben ir en minúsculas.
+          REPOSITORIO="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/portal-clientes"
+          {
+            echo "version-base=${VERSION_BASE}"
+            echo "version=${VERSION}"
+            echo "commit=${COMMIT}"
+            echo "repositorio-imagen=${REPOSITORIO}"
+            echo "imagen=${REPOSITORIO}:${VERSION}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Versión del artefacto: ${VERSION}"
+
+      # Las pruebas de este commit ya se ejecutaron en el pipeline de CI (este
+      # workflow solo avanza si el CI terminó en verde); repetirlas aquí solo
+      # alargaría el ciclo sin aportar información nueva.
+      - name: Empaquetar el jar ejecutable
+        run: mvn -B -ntp package -DskipTests
+
+      - name: Iniciar sesión en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construir la imagen Docker
+        run: |
+          docker build \
+            --build-arg VERSION="${{ steps.artefacto.outputs.version }}" \
+            --build-arg COMMIT_SHA="${{ steps.artefacto.outputs.commit }}" \
+            --build-arg FECHA_BUILD="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --tag "${{ steps.artefacto.outputs.imagen }}" \
+            .
+
+      - name: Publicar la imagen versionada en el registro
+        run: docker push --quiet "${{ steps.artefacto.outputs.imagen }}"
+
+      - name: Resumen del artefacto
+        run: |
+          {
+            echo "## Artefacto empaquetado"
+            echo "| Dato | Valor |"
+            echo "|---|---|"
+            echo "| Versión | \`${{ steps.artefacto.outputs.version }}\` |"
+            echo "| Commit | \`${{ steps.artefacto.outputs.commit }}\` |"
+            echo "| Imagen | \`${{ steps.artefacto.outputs.imagen }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ===========================================================================
+  # ETAPA 2 — Deploy to Staging + Acceptance Gate (Blue-Green)
+  # El ambiente de pruebas es efímero: se crea desde cero en el agente, se
+  # usa y se destruye. Todas las acciones viven en infra/*.sh, versionadas
+  # junto al código, y son las mismas que usa el Jenkinsfile.
+  # ===========================================================================
+  desplegar-staging:
+    name: 2 · Blue-Green en staging + Acceptance Gate
+    needs: empaquetar
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+      checks: write
+    environment:
+      name: staging
+    env:
+      REPOSITORIO_IMAGEN: ${{ needs.empaquetar.outputs.repositorio-imagen }}
+      IMAGEN_CANDIDATA: ${{ needs.empaquetar.outputs.imagen }}
+      VERSION_CANDIDATA: ${{ needs.empaquetar.outputs.version }}
+
+    steps:
+      - name: Descargar el mismo commit empaquetado
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Preparar JDK ${{ env.JAVA_VERSION }} (para el Acceptance Gate)
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Iniciar sesión en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aprovisionar el ambiente de pruebas (red + proxy NGINX)
+        run: ./infra/preparar-ambiente.sh
+
+      - name: Levantar la versión estable en BLUE (tráfico actual)
+        run: |
+          if docker pull --quiet "${REPOSITORIO_IMAGEN}:estable" > /dev/null 2>&1; then
+            ./infra/desplegar-estable.sh "${REPOSITORIO_IMAGEN}:estable"
+          else
+            echo "::notice title=Primera entrega::Aún no existe una versión estable; GREEN se valida sin una versión previa a la cual volver."
+          fi
+
+      - name: Desplegar la versión candidata en GREEN (sin tráfico)
+        id: candidata
+        run: ./infra/desplegar-candidata.sh "$IMAGEN_CANDIDATA"
+
+      # Quality gate de negocio: escenarios críticos con Selenium y contra la API,
+      # sobre GREEN por su propio puerto. Los clientes siguen en BLUE mientras tanto.
+      - name: Acceptance Gate contra GREEN (Selenium + API)
+        id: aceptacion
+        run: >
+          mvn -B -ntp verify -Paceptacion
+          -Durl.base=http://localhost:8082
+          -Dversion.esperada="$VERSION_CANDIDATA"
+
+      - name: Cambiar el tráfico a GREEN
+        run: ./infra/cambiar-trafico.sh green
+
+      - name: Smoke test a través del proxy
+        run: ./infra/verificar-salud.sh http://localhost:8080 "$VERSION_CANDIDATA"
+
+      # ---- post.failure: el equivalente al bloque 'post { failure }' de Jenkins.
+      # Solo corre si la candidata llegó a desplegarse; un fallo anterior (por
+      # ejemplo, al aprovisionar) no tiene nada que revertir.
+      - name: 🚨 Rollback automático a la versión estable
+        if: failure() && steps.candidata.outcome != 'skipped'
+        run: ./infra/rollback.sh
+
+      - name: Publicar el resultado del Acceptance Gate como check
+        uses: mikepenz/action-junit-report@v5
+        if: always() && steps.aceptacion.outcome != 'skipped'
+        continue-on-error: true
+        with:
+          report_paths: 'target/aceptacion-reports/aceptacion-junit.xml'
+          check_name: 'Resultados · Acceptance Gate'
+          detailed_summary: true
+          include_passed: true
+
+      - name: Resumen del despliegue
+        if: always()
+        run: ./infra/estado-ambiente.sh >> "$GITHUB_STEP_SUMMARY"
+
+      # Trazabilidad: quién desplegó qué, desde qué commit y con qué resultado.
+      - name: Registrar metadatos de auditoría
+        if: always()
+        run: |
+          mkdir -p .staging
+          cat > .staging/deploy-metadata.json <<EOF
+          {
+            "pipeline": "${{ github.workflow }}",
+            "ejecucion": "${{ github.run_id }}",
+            "evento": "${{ github.event_name }}",
+            "rama": "${{ github.head_ref || github.ref_name }}",
+            "commit": "${{ needs.empaquetar.outputs.commit }}",
+            "actor": "${{ github.actor }}",
+            "imagen": "${IMAGEN_CANDIDATA}",
+            "resultado": "${{ job.status }}",
+            "rollback": "$(cat .staging/rollback 2>/dev/null || echo no-ejecutado)",
+            "color_activo_final": "$(cat .staging/color-activo 2>/dev/null)",
+            "fecha": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          cat .staging/deploy-metadata.json
+
+      - name: Guardar evidencias del despliegue
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencias-despliegue-staging
+          include-hidden-files: true
+          path: |
+            target/aceptacion-reports/
+            .staging/
+          retention-days: 30
+
+      - name: Destruir el ambiente efímero
+        if: always()
+        run: ./infra/destruir-ambiente.sh
+
+  # ===========================================================================
+  # ETAPA 3 — Promoción
+  # Solo desde main: la imagen que pasó el Acceptance Gate pasa a ser la
+  # versión 'estable', que es la que BLUE levantará en el próximo despliegue
+  # y a la que volverá cualquier rollback. Las versiones anteriores siguen en
+  # el registro con su etiqueta inmutable, disponibles para un rollback manual.
+  # ===========================================================================
+  promover:
+    name: 3 · Promover versión estable
+    needs: [ empaquetar, desplegar-staging ]
+    if: >
+      github.event_name == 'workflow_run' ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: write
+    env:
+      REPOSITORIO_IMAGEN: ${{ needs.empaquetar.outputs.repositorio-imagen }}
+      IMAGEN_APROBADA: ${{ needs.empaquetar.outputs.imagen }}
+      VERSION_BASE: ${{ needs.empaquetar.outputs.version-base }}
+      VERSION: ${{ needs.empaquetar.outputs.version }}
+      COMMIT: ${{ needs.empaquetar.outputs.commit }}
+
+    steps:
+      - name: Iniciar sesión en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Marcar la imagen aprobada como estable
+        run: |
+          docker pull --quiet "$IMAGEN_APROBADA"
+          for etiqueta in estable "$VERSION_BASE"; do
+            docker tag "$IMAGEN_APROBADA" "${REPOSITORIO_IMAGEN}:${etiqueta}"
+            docker push --quiet "${REPOSITORIO_IMAGEN}:${etiqueta}"
+            echo "Publicada ${REPOSITORIO_IMAGEN}:${etiqueta}"
+          done
+
+      - name: Registrar la versión en Git (tag y release)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${VERSION_BASE}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "La release ${TAG} ya existe; esta entrega queda registrada por la imagen ${VERSION}."
+          else
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$COMMIT" \
+              --title "Portal de Clientes ${TAG}" \
+              --notes "Versión aprobada por el deployment pipeline: pasó el Acceptance Gate en staging y fue promovida como estable. Imagen: \`${IMAGEN_APROBADA}\`."
+          fi
+
+      - name: Resumen de la promoción
+        run: |
+          {
+            echo "## ✅ Versión promovida"
+            echo "| Etiqueta | Imagen |"
+            echo "|---|---|"
+            echo "| estable | \`${IMAGEN_APROBADA}\` |"
+            echo "| ${VERSION_BASE} | \`${IMAGEN_APROBADA}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
