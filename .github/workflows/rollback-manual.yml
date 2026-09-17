@@ -135,7 +135,7 @@ jobs:
         run: |
           ESTABLE="${{ steps.objetivo.outputs.repositorio }}:estable"
           docker tag "${{ steps.objetivo.outputs.imagen }}" "$ESTABLE"
-          docker push --quiet "$ESTABLE"
+          ./infra/publicar-imagen.sh "$ESTABLE"
           echo "La etiqueta 'estable' apunta ahora a ${VERSION_OBJETIVO}"
 
       - name: 🚨 Rollback automático (la versión elegida tampoco es apta)
