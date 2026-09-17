@@ -6,7 +6,7 @@
 #  trivial (compilación o prueba unitaria) detiene el pipeline en segundos y no
 #  consume tiempo de agente ejecutando pruebas más lentas.
 #
-#      compilar ──► unitarias ──► integración + BDD ──► performance ──► reportes
+#      compilar ──► análisis estático ──► unitarias ──► integración + BDD ──► performance ──► reportes
 #
 #  Si todo queda en verde sobre main, este workflow dispara el deployment
 #  pipeline (despliegue.yml), que empaqueta, despliega en staging y ejecuta
@@ -44,10 +44,12 @@ env:
 jobs:
 
   # ===========================================================================
-  # ETAPA 1 — Compilación y pruebas unitarias (rápidas y atómicas)
+  # ETAPA 1 — Commit stage: compilación, análisis estático y pruebas unitarias
+  # Todo lo que es barato y rápido va primero: un defecto detectado aquí no
+  # consume minutos de las etapas siguientes.
   # ===========================================================================
   pruebas-unitarias:
-    name: 1 · Compilación y pruebas unitarias
+    name: 1 · Compilación, análisis estático y unitarias
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -64,6 +66,22 @@ jobs:
 
       - name: Compilar el proyecto
         run: mvn -B -ntp clean compile
+
+      # SAST: revisa el bytecode en busca de defectos probables y vulnerabilidades
+      # (inyección de comandos, XSS, nulos, recursos sin cerrar). Un hallazgo de
+      # prioridad media o alta detiene el pipeline antes de ejecutar las pruebas.
+      - name: Análisis estático (SpotBugs + Find Security Bugs)
+        run: mvn -B -ntp spotbugs:check
+
+      - name: Guardar el reporte de análisis estático
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reporte-analisis-estatico
+          path: |
+            target/reports/spotbugs.html
+            target/spotbugsXml.xml
+          retention-days: 30
 
       - name: Ejecutar pruebas unitarias (Surefire)
         run: mvn -B -ntp test
@@ -125,10 +143,9 @@ jobs:
 
       # Aqui NO se usa -DskipUnitTests: el reporte de cobertura debe combinar
       # lo que cubren las pruebas unitarias, las de integración y los
-      # escenarios BDD, y para eso
-      # ambos niveles tienen que correr en la misma ejecucion, escribiendo al
-      # mismo archivo jacoco.exec. Repetir las unitarias cuesta decimas de
-      # segundo; perder la mitad de la cobertura costaria mucho mas.
+      # escenarios BDD, y para eso todos los niveles tienen que correr en la
+      # misma ejecucion, escribiendo al mismo archivo jacoco.exec. Repetir las
+      # unitarias cuesta segundos; perder parte de la cobertura costaria mas.
       - name: Ejecutar pruebas de integración y escenarios BDD, y medir cobertura
         run: mvn -B -ntp verify
 

@@ -6,7 +6,8 @@
 //  Actions ejecutan exactamente los mismos pasos: la estrategia no depende de
 //  la herramienta de CI.
 //
-//    Commit stage ........ Checkout → Compilar → Unitarias → Integración + BDD → Performance
+//    Commit stage ........ Checkout → Compilar → Análisis estático → Unitarias
+//                          → Integración + BDD → Performance
 //    Deployment pipeline . Empaquetar imagen → Deploy to Staging (Blue-Green)
 //                          → Acceptance Gate → Cambiar tráfico → Promover
 //    post { failure } .... infra/rollback.sh
@@ -72,6 +73,18 @@ pipeline {
         stage('Compilar') {
             steps {
                 sh 'mvn -B -ntp clean compile'
+            }
+        }
+
+        // SAST después del build y antes de las pruebas (ME_6): falla rápido y barato.
+        stage('Análisis estático') {
+            steps {
+                sh 'mvn -B -ntp spotbugs:check'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'target/reports/spotbugs.html, target/spotbugsXml.xml', allowEmptyArchive: true
+                }
             }
         }
 

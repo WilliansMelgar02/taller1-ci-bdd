@@ -44,6 +44,8 @@
     <maven.surefire.report.version>3.5.2</maven.surefire.report.version>
     <maven.site.version>3.12.1</maven.site.version>
     <jacoco.version>0.8.12</jacoco.version>
+    <spotbugs.plugin.version>4.10.4.1</spotbugs.plugin.version>
+    <findsecbugs.version>1.14.0</findsecbugs.version>
 
     <!-- Umbrales de cobertura que actuan como quality gate -->
     <cobertura.instrucciones.minima>0.80</cobertura.instrucciones.minima>
@@ -352,6 +354,35 @@
           </execution>
         </executions>
       </plugin>
+      <!-- ============================================================
+           SPOTBUGS + FIND SECURITY BUGS = analisis estatico (SAST).
+           Revisa el bytecode buscando defectos probables (nulos, recursos
+           sin cerrar, concurrencia) y vulnerabilidades (inyecciones, XSS,
+           criptografia debil) sin ejecutar el codigo. Corre en la etapa de
+           commit, antes de las pruebas: es barato y falla temprano.
+             mvn compile spotbugs:check
+           ============================================================ -->
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>${spotbugs.plugin.version}</version>
+        <configuration>
+          <effort>Max</effort>
+          <!-- Medium: reporta defectos de prioridad alta y media, no los de estilo -->
+          <threshold>Medium</threshold>
+          <failOnError>true</failOnError>
+          <xmlOutput>true</xmlOutput>
+          <htmlOutput>true</htmlOutput>
+          <plugins>
+            <plugin>
+              <groupId>com.h3xstream.findsecbugs</groupId>
+              <artifactId>findsecbugs-plugin</artifactId>
+              <version>${findsecbugs.version}</version>
+            </plugin>
+          </plugins>
+        </configuration>
+      </plugin>
+
       <!-- Genera el sitio/reportes HTML navegables en target/site -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
