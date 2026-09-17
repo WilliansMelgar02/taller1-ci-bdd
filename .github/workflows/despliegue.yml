@@ -70,12 +70,12 @@ jobs:
 
     steps:
       - name: Descargar el commit que aprobó el CI
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Preparar JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -105,7 +105,7 @@ jobs:
         run: mvn -B -ntp package -DskipTests
 
       - name: Iniciar sesión en GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -121,7 +121,7 @@ jobs:
             .
 
       - name: Publicar la imagen versionada en el registro
-        run: docker push --quiet "${{ steps.artefacto.outputs.imagen }}"
+        run: ./infra/publicar-imagen.sh "${{ steps.artefacto.outputs.imagen }}"
 
       - name: Resumen del artefacto
         run: |
@@ -158,19 +158,19 @@ jobs:
 
     steps:
       - name: Descargar el mismo commit empaquetado
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Preparar JDK ${{ env.JAVA_VERSION }} (para el Acceptance Gate)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: maven
 
       - name: Iniciar sesión en GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -214,7 +214,7 @@ jobs:
         run: ./infra/rollback.sh
 
       - name: Publicar el resultado del Acceptance Gate como check
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always() && steps.aceptacion.outcome != 'skipped'
         continue-on-error: true
         with:
@@ -250,7 +250,7 @@ jobs:
           cat .staging/deploy-metadata.json
 
       - name: Guardar evidencias del despliegue
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: evidencias-despliegue-staging
@@ -290,8 +290,13 @@ jobs:
       COMMIT: ${{ needs.empaquetar.outputs.commit }}
 
     steps:
+      - name: Descargar los scripts de despliegue
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
       - name: Iniciar sesión en GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -302,8 +307,7 @@ jobs:
           docker pull --quiet "$IMAGEN_APROBADA"
           for etiqueta in estable "$VERSION_BASE"; do
             docker tag "$IMAGEN_APROBADA" "${REPOSITORIO_IMAGEN}:${etiqueta}"
-            docker push --quiet "${REPOSITORIO_IMAGEN}:${etiqueta}"
-            echo "Publicada ${REPOSITORIO_IMAGEN}:${etiqueta}"
+            ./infra/publicar-imagen.sh "${REPOSITORIO_IMAGEN}:${etiqueta}"
           done
 
       - name: Registrar la versión en Git (tag y release)

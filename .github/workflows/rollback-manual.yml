@@ -52,13 +52,13 @@ jobs:
 
     steps:
       - name: Descargar el historial de main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
 
       - name: Iniciar sesión en GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -98,7 +98,7 @@ jobs:
         run: git worktree add --detach "$RUNNER_TEMP/version-objetivo" "${{ steps.objetivo.outputs.commit }}"
 
       - name: Preparar JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -135,7 +135,7 @@ jobs:
         run: |
           ESTABLE="${{ steps.objetivo.outputs.repositorio }}:estable"
           docker tag "${{ steps.objetivo.outputs.imagen }}" "$ESTABLE"
-          docker push --quiet "$ESTABLE"
+          ./infra/publicar-imagen.sh "$ESTABLE"
           echo "La etiqueta 'estable' apunta ahora a ${VERSION_OBJETIVO}"
 
       - name: 🚨 Rollback automático (la versión elegida tampoco es apta)
@@ -143,7 +143,7 @@ jobs:
         run: ./infra/rollback.sh
 
       - name: Publicar el resultado del Acceptance Gate como check
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always() && steps.aceptacion.outcome != 'skipped'
         continue-on-error: true
         with:
@@ -182,7 +182,7 @@ jobs:
           cat .staging/rollback-metadata.json
 
       - name: Guardar evidencias
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: evidencias-rollback-manual

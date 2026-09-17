@@ -55,10 +55,10 @@ jobs:
 
     steps:
       - name: Descargar el código del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Preparar JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -74,7 +74,7 @@ jobs:
         run: mvn -B -ntp spotbugs:check
 
       - name: Guardar el reporte de análisis estático
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: reporte-analisis-estatico
@@ -87,7 +87,7 @@ jobs:
         run: mvn -B -ntp test
 
       - name: Publicar resultados como check del commit
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always()            # se publica incluso si las pruebas fallaron
         continue-on-error: true
         with:
@@ -110,7 +110,7 @@ jobs:
           echo "| Errores | $ERRORES |" >> $GITHUB_STEP_SUMMARY
 
       - name: Guardar resultados de las pruebas unitarias
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: resultados-pruebas-unitarias
@@ -132,10 +132,10 @@ jobs:
 
     steps:
       - name: Descargar el código del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Preparar JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -154,7 +154,7 @@ jobs:
         run: mvn -B -ntp site -DskipTests
 
       - name: Publicar resultados de integración como check del commit
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always()
         continue-on-error: true
         with:
@@ -164,7 +164,7 @@ jobs:
           include_passed: true
 
       - name: Publicar resultados BDD como check del commit
-        uses: mikepenz/action-junit-report@v5
+        uses: mikepenz/action-junit-report@v6
         if: always()
         continue-on-error: true
         with:
@@ -228,7 +228,7 @@ jobs:
           ' >> $GITHUB_STEP_SUMMARY
 
       - name: Guardar reporte navegable de BDD
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: reporte-bdd-cucumber
@@ -252,17 +252,17 @@ jobs:
 
     steps:
       - name: Descargar el código del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Preparar JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: maven
 
       - name: Preparar Node.js (resumen de indicadores)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -313,7 +313,7 @@ jobs:
           fi
 
       - name: Guardar reporte de performance
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: reporte-performance-k6
@@ -341,10 +341,10 @@ jobs:
 
     steps:
       - name: Descargar el código del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Recuperar los artefactos de todas las etapas
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artefactos
 
@@ -379,19 +379,19 @@ jobs:
           done
 
       - name: Preparar GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           # Habilita Pages en el repositorio si aun no lo estaba, en lugar de fallar.
           enablement: true
 
       - name: Subir el sitio
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: sitio
 
       - name: Desplegar en GitHub Pages
         id: despliegue
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # ===========================================================================
   # ETAPA 5 — Alertas automáticas
@@ -452,7 +452,7 @@ jobs:
       # --- A3: main roto abre un incidente trazable ---------------------------
       - name: Abrir incidente si main quedó roto
         if: steps.estado.outputs.global == 'failure' && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.issues.create({
