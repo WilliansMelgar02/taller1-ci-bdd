@@ -1,0 +1,197 @@
+# =============================================================================
+#  Rollback manual asistido
+#
+#  Complementa al rollback automático del deployment pipeline. Se usa cuando un
+#  defecto aparece DESPUÉS de promover una versión (por ejemplo, lo reporta un
+#  cliente): alguien elige a qué versión volver y el pipeline hace el resto, con
+#  las mismas validaciones de un despliegue normal. Nadie ejecuta comandos a
+#  mano contra el ambiente, y la acción queda auditada con su motivo.
+#
+#    versión elegida ─► ¿pasó por main? ─► GREEN + health ─► Acceptance Gate
+#      ─► switch de tráfico ─► se marca como 'estable'
+#      ✖ si la versión elegida tampoco sirve ─► rollback.sh (se mantiene la actual)
+#
+#  Uso: Actions → "Rollback manual asistido" → Run workflow → versión y motivo.
+# =============================================================================
+name: Rollback manual asistido
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a restaurar: etiqueta de la imagen, por ejemplo 1.1.0-a1b2c3d'
+        required: true
+        type: string
+      motivo:
+        description: 'Motivo del rollback (queda registrado en la auditoría)'
+        required: true
+        type: string
+
+# Mismo grupo que los despliegues de main: un rollback y un despliegue nunca
+# modifican la versión estable al mismo tiempo.
+concurrency:
+  group: despliegue-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  restaurar:
+    name: Restaurar la versión ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+      checks: write
+    environment:
+      name: staging
+    env:
+      VERSION_OBJETIVO: ${{ inputs.version }}
+
+    steps:
+      - name: Descargar el historial de main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Iniciar sesión en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Solo se puede volver a una versión que exista en el registro y cuyo commit
+      # pertenezca a main: nunca a una imagen de un Pull Request sin integrar.
+      - name: Validar la versión solicitada
+        id: objetivo
+        run: |
+          REPOSITORIO="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/portal-clientes"
+          IMAGEN="${REPOSITORIO}:${VERSION_OBJETIVO}"
+
+          if ! docker pull --quiet "$IMAGEN" > /dev/null 2>&1; then
+            echo "::error::La imagen ${IMAGEN} no existe en el registro."
+            exit 1
+          fi
+
+          COMMIT=$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGEN")
+          if ! git merge-base --is-ancestor "$COMMIT" origin/main 2> /dev/null; then
+            echo "::error::La versión ${VERSION_OBJETIVO} (commit ${COMMIT}) no pertenece a main; no se puede restaurar."
+            exit 1
+          fi
+
+          {
+            echo "repositorio=${REPOSITORIO}"
+            echo "imagen=${IMAGEN}"
+            echo "commit=${COMMIT}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Versión válida: ${IMAGEN} (commit ${COMMIT})"
+
+      # Las pruebas de aceptación deben ser las de ESA versión: si la suite
+      # actual verificara funcionalidades nuevas, rechazaría una versión
+      # anterior que en su momento era correcta. Los scripts de infra/ siguen
+      # siendo los de main, que son los que conocen el ambiente actual.
+      - name: Obtener las pruebas de aceptación de la versión a restaurar
+        run: git worktree add --detach "$RUNNER_TEMP/version-objetivo" "${{ steps.objetivo.outputs.commit }}"
+
+      - name: Preparar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Aprovisionar el ambiente de pruebas
+        run: ./infra/preparar-ambiente.sh
+
+      - name: Levantar la versión estable actual en BLUE
+        run: |
+          ESTABLE="${{ steps.objetivo.outputs.repositorio }}:estable"
+          if docker pull --quiet "$ESTABLE" > /dev/null 2>&1; then
+            ./infra/desplegar-estable.sh "$ESTABLE"
+          else
+            echo "::notice::No existe una versión estable actual."
+          fi
+
+      - name: Desplegar la versión a restaurar en GREEN
+        id: candidata
+        run: ./infra/desplegar-candidata.sh "${{ steps.objetivo.outputs.imagen }}"
+
+      - name: Acceptance Gate contra GREEN
+        id: aceptacion
+        working-directory: ${{ runner.temp }}/version-objetivo
+        run: >
+          mvn -B -ntp verify -Paceptacion
+          -Durl.base=http://localhost:8082
+          -Dversion.esperada="$VERSION_OBJETIVO"
+
+      - name: Cambiar el tráfico a GREEN
+        run: ./infra/cambiar-trafico.sh green
+
+      - name: Marcar la versión restaurada como estable
+        run: |
+          ESTABLE="${{ steps.objetivo.outputs.repositorio }}:estable"
+          docker tag "${{ steps.objetivo.outputs.imagen }}" "$ESTABLE"
+          docker push --quiet "$ESTABLE"
+          echo "La etiqueta 'estable' apunta ahora a ${VERSION_OBJETIVO}"
+
+      - name: 🚨 Rollback automático (la versión elegida tampoco es apta)
+        if: failure() && steps.candidata.outcome != 'skipped'
+        run: ./infra/rollback.sh
+
+      - name: Publicar el resultado del Acceptance Gate como check
+        uses: mikepenz/action-junit-report@v5
+        if: always() && steps.aceptacion.outcome != 'skipped'
+        continue-on-error: true
+        with:
+          report_paths: '${{ runner.temp }}/version-objetivo/target/aceptacion-reports/aceptacion-junit.xml'
+          check_name: 'Resultados · Acceptance Gate (rollback manual)'
+          include_passed: true
+
+      - name: Resumen y auditoría
+        if: always()
+        env:
+          MOTIVO: ${{ inputs.motivo }}
+        run: |
+          {
+            echo "## Rollback manual asistido"
+            echo "| Dato | Valor |"
+            echo "|---|---|"
+            echo "| Versión solicitada | \`${VERSION_OBJETIVO}\` |"
+            echo "| Solicitado por | @${{ github.actor }} |"
+            echo "| Motivo | ${MOTIVO} |"
+            echo "| Resultado | ${{ job.status }} |"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -d .staging ]; then ./infra/estado-ambiente.sh >> "$GITHUB_STEP_SUMMARY"; fi
+
+          mkdir -p .staging
+          jq -n \
+            --arg version "$VERSION_OBJETIVO" \
+            --arg motivo "$MOTIVO" \
+            --arg actor "${{ github.actor }}" \
+            --arg resultado "${{ job.status }}" \
+            --arg ejecucion "${{ github.run_id }}" \
+            --arg fecha "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{tipo: "rollback-manual", version: $version, motivo: $motivo, actor: $actor,
+              resultado: $resultado, ejecucion: $ejecucion, fecha: $fecha}' \
+            > .staging/rollback-metadata.json
+          cat .staging/rollback-metadata.json
+
+      - name: Guardar evidencias
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencias-rollback-manual
+          include-hidden-files: true
+          path: |
+            ${{ runner.temp }}/version-objetivo/target/aceptacion-reports/
+            .staging/
+          retention-days: 30
+
+      - name: Destruir el ambiente efímero
+        if: always()
+        run: ./infra/destruir-ambiente.sh
