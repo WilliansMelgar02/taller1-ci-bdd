@@ -25,7 +25,7 @@ async function ingresar(evento) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         usuario: document.getElementById('usuario').value,
-        contrasena: document.getElementById('contrasena').value,
+        clave: document.getElementById('contrasena').value,
       }),
     });
     const datos = await respuesta.json();
