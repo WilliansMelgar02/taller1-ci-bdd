@@ -1,0 +1,6 @@
+# Los scripts que corren en agentes Linux deben conservar fin de línea LF aunque
+# el repositorio se clone en Windows: con CRLF, bash falla con "$'\r': command not found".
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+Jenkinsfile text eol=lf
+*.yml       text eol=lf
