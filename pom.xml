@@ -9,13 +9,15 @@
        ================================================================ -->
   <groupId>cl.taller.qa</groupId>
   <artifactId>taller1-ci-bdd</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
 
-  <name>Taller 1 - Integracion Continua y BDD</name>
+  <name>Portal de Clientes - Automatizacion de Pruebas</name>
   <description>
-    Proyecto de demostracion de integracion continua: pruebas unitarias atomicas con JUnit 5,
-    pruebas de aceptacion BDD con Cucumber, reportes navegables y pipeline automatizado.
+    Portal de Clientes con API HTTP e interfaz web, usado para demostrar integracion continua
+    y un deployment pipeline: pruebas unitarias con JUnit 5, pruebas de integracion sobre la
+    API, escenarios BDD con Cucumber, pruebas de aceptacion con Selenium y despliegue
+    Blue-Green con rollback automatico.
   </description>
 
   <!-- ================================================================
@@ -31,8 +33,11 @@
     <junit.version>5.11.4</junit.version>
     <junit.platform.version>1.11.4</junit.platform.version>
     <cucumber.version>7.20.1</cucumber.version>
+    <gson.version>2.14.0</gson.version>
 
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+    <maven.jar.version>3.4.2</maven.jar.version>
+    <maven.shade.version>3.6.2</maven.shade.version>
     <maven.surefire.version>3.5.2</maven.surefire.version>
     <maven.failsafe.version>3.5.2</maven.failsafe.version>
     <maven.surefire.report.version>3.5.2</maven.surefire.report.version>
@@ -73,6 +78,13 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- Gson: serializa el contrato JSON de la API (unica dependencia de produccion) -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
+    </dependency>
+
     <!-- JUnit 5 (Jupiter): motor de las pruebas unitarias atomicas -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -104,12 +116,81 @@
   </dependencies>
 
   <build>
+    <!-- Nombre estable del artefacto: el Dockerfile lo copia sin depender de la version -->
+    <finalName>portal-clientes</finalName>
+
     <plugins>
       <!-- Compilacion con Java 17 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven.compiler.plugin.version}</version>
+      </plugin>
+
+      <!-- ============================================================
+           EMPAQUETADO = artefacto desplegable.
+           El MANIFEST declara la clase principal y la version del proyecto,
+           que la aplicacion informa en /health para que el pipeline
+           confirme que responde la version recien desplegada.
+           ============================================================ -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven.jar.version}</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>cl.taller.qa.Aplicacion</mainClass>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- Jar autocontenido (incluye Gson): la imagen Docker solo necesita
+           'java -jar', sin armar un classpath dentro del contenedor. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven.shade.version}</version>
+        <executions>
+          <execution>
+            <id>jar-ejecutable</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <!-- Metadatos de modulos de las dependencias: no aplican a un jar plano -->
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/versions/*/module-info.class</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <!-- El MANIFEST valido es el del proyecto; el de Gson se descarta -->
+                  <artifact>com.google.*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <!-- Garantiza que el jar final conserve la clase principal y la version -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>cl.taller.qa.Aplicacion</mainClass>
+                  <manifestEntries>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- ============================================================
@@ -207,6 +288,12 @@
               <goal>check</goal>
             </goals>
             <configuration>
+              <!-- Aplicacion solo ensambla piezas y arranca el proceso: no se
+                   ejecuta dentro de las pruebas en memoria. La verifican el
+                   health check y las pruebas de aceptacion sobre el contenedor. -->
+              <excludes>
+                <exclude>cl/taller/qa/Aplicacion.class</exclude>
+              </excludes>
               <rules>
                 <rule>
                   <element>BUNDLE</element>

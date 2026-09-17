@@ -22,6 +22,12 @@ import java.util.Set;
  *
  * <p>El repositorio de usuarios es en memoria a proposito: mantiene la prueba
  * rapida y determinista, sin depender de una base de datos externa.</p>
+ *
+ * <p><b>Concurrencia:</b> el servidor HTTP atiende varias peticiones a la vez.
+ * La regla de bloqueo lee el contador, lo incrementa y decide si bloquea; si
+ * dos peticiones intercalaran esos pasos, un atacante podria sumar mas de tres
+ * intentos antes del bloqueo. Por eso las operaciones publicas estan
+ * sincronizadas: cada intento se evalua de forma atomica.</p>
  */
 public class ServicioAutenticacion {
 
@@ -42,7 +48,7 @@ public class ServicioAutenticacion {
      * @param usuario identificador del cliente
      * @param clave   contrasena en texto plano (solo para efectos del taller)
      */
-    public void registrarUsuario(String usuario, String clave) {
+    public synchronized void registrarUsuario(String usuario, String clave) {
         usuariosRegistrados.put(usuario, clave);
     }
 
@@ -53,16 +59,16 @@ public class ServicioAutenticacion {
      * @param clave   contrasena ingresada
      * @return el resultado del intento, nunca {@code null}
      */
-    public ResultadoAutenticacion autenticar(String usuario, String clave) {
+    public synchronized ResultadoAutenticacion autenticar(String usuario, String clave) {
         // RN-06: datos incompletos no consumen intentos.
         if (esVacio(usuario) || esVacio(clave)) {
             return new ResultadoAutenticacion(
-                    false, MSG_DATOS_INCOMPLETOS, intentosRestantes(usuario), false);
+                    EstadoAutenticacion.DATOS_INCOMPLETOS, MSG_DATOS_INCOMPLETOS, intentosRestantes(usuario));
         }
 
         // RN-04: una cuenta bloqueada no vuelve a validar credenciales.
         if (cuentasBloqueadas.contains(usuario)) {
-            return new ResultadoAutenticacion(false, MSG_CUENTA_BLOQUEADA, 0, true);
+            return new ResultadoAutenticacion(EstadoAutenticacion.CUENTA_BLOQUEADA, MSG_CUENTA_BLOQUEADA, 0);
         }
 
         // RN-01 y RN-02: comparacion exacta, sensible a mayusculas.
@@ -73,7 +79,7 @@ public class ServicioAutenticacion {
             // RN-05: el acierto reinicia el contador.
             intentosFallidos.remove(usuario);
             return new ResultadoAutenticacion(
-                    true, "Bienvenido/a, " + usuario, MAX_INTENTOS_PERMITIDOS, false);
+                    EstadoAutenticacion.CONCEDIDO, "Bienvenido/a, " + usuario, MAX_INTENTOS_PERMITIDOS);
         }
 
         return registrarIntentoFallido(usuario);
@@ -91,15 +97,14 @@ public class ServicioAutenticacion {
 
         if (fallosAcumulados >= MAX_INTENTOS_PERMITIDOS) {
             cuentasBloqueadas.add(usuario);
-            return new ResultadoAutenticacion(false, MSG_CUENTA_BLOQUEADA, 0, true);
+            return new ResultadoAutenticacion(EstadoAutenticacion.CUENTA_BLOQUEADA, MSG_CUENTA_BLOQUEADA, 0);
         }
 
         // RN-03: mensaje generico, no revela si fallo el usuario o la clave.
         return new ResultadoAutenticacion(
-                false,
+                EstadoAutenticacion.CREDENCIALES_INVALIDAS,
                 MSG_CREDENCIALES_INVALIDAS,
-                MAX_INTENTOS_PERMITIDOS - fallosAcumulados,
-                false);
+                MAX_INTENTOS_PERMITIDOS - fallosAcumulados);
     }
 
     /**
@@ -108,7 +113,7 @@ public class ServicioAutenticacion {
      * @param usuario identificador consultado
      * @return intentos disponibles
      */
-    public int intentosRestantes(String usuario) {
+    public synchronized int intentosRestantes(String usuario) {
         if (cuentasBloqueadas.contains(usuario)) {
             return 0;
         }
@@ -121,7 +126,7 @@ public class ServicioAutenticacion {
      * @param usuario identificador consultado
      * @return true si la cuenta fue bloqueada
      */
-    public boolean estaBloqueada(String usuario) {
+    public synchronized boolean estaBloqueada(String usuario) {
         return cuentasBloqueadas.contains(usuario);
     }
 

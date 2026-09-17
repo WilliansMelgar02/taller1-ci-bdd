@@ -1,13 +1,16 @@
 # =============================================================================
-#  Pipeline de Integración Continua — Taller 1, Unidad II
+#  Pipeline de Integración Continua — Examen Final (Actividad 2)
 #
 #  Estrategia: "fail fast, feedback rápido".
 #  Las etapas se ordenan de la más barata a la más cara, de modo que un error
 #  trivial (compilación o prueba unitaria) detiene el pipeline en segundos y no
-#  consume tiempo de agente ejecutando pruebas de aceptación.
+#  consume tiempo de agente ejecutando pruebas más lentas.
 #
-#      compilar ──► pruebas unitarias ──► pruebas BDD ──► publicar reportes
-#         5 s              3 s                8 s              ~20 s
+#      compilar ──► unitarias ──► integración + BDD ──► performance ──► reportes
+#
+#  Si todo queda en verde sobre main, este workflow dispara el deployment
+#  pipeline (despliegue.yml), que empaqueta, despliega en staging y ejecuta
+#  las pruebas de aceptación (Actividad 3).
 # =============================================================================
 name: CI - Pruebas Automatizadas
 
@@ -97,12 +100,14 @@ jobs:
           retention-days: 30
 
   # ===========================================================================
-  # ETAPA 2 — Pruebas de aceptación BDD (Cucumber)
-  # Solo se ejecuta si la etapa 1 pasó: no tiene sentido validar reglas de
-  # negocio sobre un código que ya falló en lo básico.
+  # ETAPA 2 — Pruebas de integración y escenarios BDD (Failsafe)
+  # Solo se ejecuta si la etapa 1 pasó: no tiene sentido levantar el servidor
+  # HTTP ni validar reglas de negocio sobre un código que ya falló en lo básico.
+  #   - Integración: el servidor HTTP real, la API, el JSON y el servicio juntos.
+  #   - BDD: las reglas de negocio de la sesión Three Amigos, en Gherkin.
   # ===========================================================================
-  pruebas-bdd:
-    name: 2 · Escenarios BDD (Cucumber)
+  pruebas-integracion:
+    name: 2 · Integración y escenarios BDD
     runs-on: ubuntu-latest
     needs: pruebas-unitarias
     timeout-minutes: 15
@@ -119,16 +124,27 @@ jobs:
           cache: maven
 
       # Aqui NO se usa -DskipUnitTests: el reporte de cobertura debe combinar
-      # lo que cubren las pruebas unitarias y los escenarios BDD, y para eso
+      # lo que cubren las pruebas unitarias, las de integración y los
+      # escenarios BDD, y para eso
       # ambos niveles tienen que correr en la misma ejecucion, escribiendo al
       # mismo archivo jacoco.exec. Repetir las unitarias cuesta decimas de
       # segundo; perder la mitad de la cobertura costaria mucho mas.
-      - name: Ejecutar escenarios BDD y medir cobertura
+      - name: Ejecutar pruebas de integración y escenarios BDD, y medir cobertura
         run: mvn -B -ntp verify
 
       - name: Generar reporte HTML navegable (Surefire y Failsafe)
         if: always()
         run: mvn -B -ntp site -DskipTests
+
+      - name: Publicar resultados de integración como check del commit
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        continue-on-error: true
+        with:
+          report_paths: 'target/failsafe-reports/TEST-cl.taller.qa.integracion.*.xml'
+          check_name: 'Resultados · Pruebas de integración'
+          detailed_summary: true
+          include_passed: true
 
       - name: Publicar resultados BDD como check del commit
         uses: mikepenz/action-junit-report@v5
@@ -140,9 +156,24 @@ jobs:
           detailed_summary: true
           include_passed: true
 
-      - name: Resumen BDD en la pestaña Actions
+      - name: Resumen de integración y BDD en la pestaña Actions
         if: always()
         run: |
+          echo "## Pruebas de integración (API HTTP)" >> $GITHUB_STEP_SUMMARY
+          INTEGRACION=$(ls target/failsafe-reports/TEST-cl.taller.qa.integracion.*.xml 2>/dev/null || true)
+          if [ -n "$INTEGRACION" ]; then
+            TOTAL=$(grep -ho 'tests="[0-9]*"' $INTEGRACION | grep -o '[0-9]*' | paste -sd+ | bc)
+            FALLOS=$(grep -ho 'failures="[0-9]*"' $INTEGRACION | grep -o '[0-9]*' | paste -sd+ | bc)
+            ERRORES=$(grep -ho 'errors="[0-9]*"' $INTEGRACION | grep -o '[0-9]*' | paste -sd+ | bc)
+            echo "| Métrica | Valor |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| Pruebas ejecutadas | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| Fallos | $FALLOS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Errores | $ERRORES |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No se generaron resultados de integración." >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "## Escenarios BDD (Cucumber)" >> $GITHUB_STEP_SUMMARY
           TOTAL=$(grep -ho 'tests="[0-9]*"' target/cucumber-reports/cucumber-junit.xml | grep -o '[0-9]*' | paste -sd+ | bc)
           FALLOS=$(grep -ho 'failures="[0-9]*"' target/cucumber-reports/cucumber-junit.xml | grep -o '[0-9]*' | paste -sd+ | bc)
@@ -191,7 +222,7 @@ jobs:
 
   # ===========================================================================
   # ETAPA 3 — Prueba de performance (k6)
-  # Corre en paralelo a la etapa BDD: ambas dependen de las unitarias, pero
+  # Corre en paralelo a la etapa de integración: ambas dependen de las unitarias, pero
   # no entre sí, así que no tiene sentido serializarlas.
   # ===========================================================================
   performance:
@@ -269,7 +300,7 @@ jobs:
   publicar-dashboard:
     name: 4 · Publicar dashboard y reportes
     runs-on: ubuntu-latest
-    needs: [ pruebas-unitarias, pruebas-bdd, performance ]
+    needs: [ pruebas-unitarias, pruebas-integracion, performance ]
     if: always() && github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -341,7 +372,7 @@ jobs:
   alertas:
     name: 5 · Alertas automáticas
     runs-on: ubuntu-latest
-    needs: [ pruebas-unitarias, pruebas-bdd, performance ]
+    needs: [ pruebas-unitarias, pruebas-integracion, performance ]
     if: always()
     permissions:
       contents: read
@@ -353,7 +384,7 @@ jobs:
         id: estado
         run: |
           UNIT="${{ needs.pruebas-unitarias.result }}"
-          BDD="${{ needs.pruebas-bdd.result }}"
+          BDD="${{ needs.pruebas-integracion.result }}"
           PERF="${{ needs.performance.result }}"
           echo "unit=$UNIT"  >> $GITHUB_OUTPUT
           echo "bdd=$BDD"    >> $GITHUB_OUTPUT
@@ -381,7 +412,7 @@ jobs:
               { "type": "section", "text": { "type": "mrkdwn",
                 "text": "*Repositorio:* ${{ github.repository }}\n*Autor:* ${{ github.actor }}\n*Commit:* \`${{ github.sha }}\`" } },
               { "type": "section", "text": { "type": "mrkdwn",
-                "text": "*Unitarias:* ${{ steps.estado.outputs.unit }}\n*BDD:* ${{ steps.estado.outputs.bdd }}\n*Performance:* ${{ steps.estado.outputs.perf }}" } },
+                "text": "*Unitarias:* ${{ steps.estado.outputs.unit }}\n*Integración y BDD:* ${{ steps.estado.outputs.bdd }}\n*Performance:* ${{ steps.estado.outputs.perf }}" } },
               { "type": "actions", "elements": [
                 { "type": "button", "text": { "type": "plain_text", "text": "Ver el run" },
                   "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" } ] }
@@ -406,7 +437,7 @@ jobs:
                 `- **Commit:** ${context.sha}`,
                 `- **Autor:** @${context.actor}`,
                 `- **Unitarias:** ${{ steps.estado.outputs.unit }}`,
-                `- **BDD:** ${{ steps.estado.outputs.bdd }}`,
+                `- **Integración y BDD:** ${{ steps.estado.outputs.bdd }}`,
                 `- **Performance:** ${{ steps.estado.outputs.perf }}`,
                 '',
                 `[Ver el run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
@@ -419,12 +450,12 @@ jobs:
         run: |
           if [ "${{ steps.estado.outputs.global }}" = "success" ]; then
             echo "## ✅ Pipeline en verde" >> $GITHUB_STEP_SUMMARY
-            echo "Unitarias, escenarios BDD y prueba de performance cumplieron todos sus umbrales." >> $GITHUB_STEP_SUMMARY
+            echo "Unitarias, integración, escenarios BDD y prueba de performance cumplieron todos sus umbrales." >> $GITHUB_STEP_SUMMARY
           else
             echo "## 🚨 Pipeline fallido — alerta emitida" >> $GITHUB_STEP_SUMMARY
             echo "| Etapa | Resultado |" >> $GITHUB_STEP_SUMMARY
             echo "|---|---|" >> $GITHUB_STEP_SUMMARY
             echo "| Pruebas unitarias | ${{ steps.estado.outputs.unit }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Escenarios BDD | ${{ steps.estado.outputs.bdd }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Integración y BDD | ${{ steps.estado.outputs.bdd }} |" >> $GITHUB_STEP_SUMMARY
             echo "| Performance | ${{ steps.estado.outputs.perf }} |" >> $GITHUB_STEP_SUMMARY
           fi
