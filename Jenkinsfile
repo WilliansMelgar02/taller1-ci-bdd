@@ -255,17 +255,17 @@ pipeline {
             }
             slackSend channel: '#alertas-qa',
                       color: 'danger',
-                      message: ":rotating_light: Build #${env.BUILD_NUMBER} FALLÓ en ${env.BRANCH_NAME} — ${env.BUILD_URL}"
+                      message: "[FALLO] Build #${env.BUILD_NUMBER} FALLÓ en ${env.BRANCH_NAME} — ${env.BUILD_URL}"
         }
         unstable {
             slackSend channel: '#alertas-qa',
                       color: 'warning',
-                      message: ":warning: Build #${env.BUILD_NUMBER} INESTABLE (pruebas fallidas) — ${env.BUILD_URL}testReport"
+                      message: "[INESTABLE] Build #${env.BUILD_NUMBER} INESTABLE (pruebas fallidas) — ${env.BUILD_URL}testReport"
         }
         fixed {
             slackSend channel: '#alertas-qa',
                       color: 'good',
-                      message: ":white_check_mark: Build #${env.BUILD_NUMBER} recuperado en ${env.BRANCH_NAME}"
+                      message: "[RECUPERADO] Build #${env.BUILD_NUMBER} recuperado en ${env.BRANCH_NAME}"
         }
         cleanup {
             script {

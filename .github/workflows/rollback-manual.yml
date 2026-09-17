@@ -9,7 +9,7 @@
 #
 #    versión elegida ─► ¿pasó por main? ─► GREEN + health ─► Acceptance Gate
 #      ─► switch de tráfico ─► se marca como 'estable'
-#      ✖ si la versión elegida tampoco sirve ─► rollback.sh (se mantiene la actual)
+#      si la versión elegida tampoco sirve ─► rollback.sh (se mantiene la actual)
 #
 #  Uso: Actions → "Rollback manual asistido" → Run workflow → versión y motivo.
 # =============================================================================
@@ -138,7 +138,7 @@ jobs:
           ./infra/publicar-imagen.sh "$ESTABLE"
           echo "La etiqueta 'estable' apunta ahora a ${VERSION_OBJETIVO}"
 
-      - name: 🚨 Rollback automático (la versión elegida tampoco es apta)
+      - name: Rollback automático (la versión elegida tampoco es apta)
         if: failure() && steps.candidata.outcome != 'skipped'
         run: ./infra/rollback.sh
 

@@ -26,15 +26,15 @@ de este proyecto cumple cuatro condiciones:
 
 | # | Condición que la dispara | Severidad | Canal | Destinatario | Acción esperada |
 |---|---|---|---|---|---|
-| A1 | Falla una prueba unitaria | 🔴 Crítica | Check en el PR + Slack `#ci-alertas` | Autor del commit | Corregir antes de mezclar. El merge queda bloqueado |
-| A2 | Falla un escenario BDD | 🔴 Crítica | Check en el PR + Slack | Autor + QA | Se rompió una regla de negocio acordada: corregir o renegociar el criterio |
-| A3 | El pipeline falla en `main` | 🔴 Crítica | Slack `#ci-alertas` + correo + issue automático | Todo el equipo | `main` roto = nadie puede desplegar. Máxima prioridad |
-| A4 | Latencia p95 > 800 ms | 🟠 Alta | Slack `#performance` | QA + Dev responsable | Investigar el commit que introdujo la degradación |
-| A5 | Tasa de error > 1 % bajo carga | 🔴 Crítica | Slack + PagerDuty | Dev de turno | El sistema falla bajo carga normal: bloquear el despliegue |
-| A6 | TPS cae > 20 % respecto al promedio de los 5 builds previos | 🟡 Media | Comentario en el PR | Autor del PR | Degradación gradual: revisar antes de que se acumule |
-| A7 | Una prueba pasa a ser inestable (*flaky*) | 🟡 Media | Issue automático etiquetado `flaky` | QA | Estabilizar o cuarentena. Nunca ignorar |
-| A8 | La duración de la suite crece > 30 % | 🟡 Media | Resumen semanal | Líder técnico | Optimizar o paralelizar antes de que el feedback se vuelva inútil |
-| A9 | El build vuelve a verde tras un fallo | 🟢 Informativa | Slack `#ci-alertas` | Todo el equipo | Cerrar el incidente. Comunicar la recuperación también es parte de la alerta |
+| A1 | Falla una prueba unitaria | Crítica | Check en el PR + Slack `#ci-alertas` | Autor del commit | Corregir antes de mezclar. El merge queda bloqueado |
+| A2 | Falla un escenario BDD | Crítica | Check en el PR + Slack | Autor + QA | Se rompió una regla de negocio acordada: corregir o renegociar el criterio |
+| A3 | El pipeline falla en `main` | Crítica | Slack `#ci-alertas` + correo + issue automático | Todo el equipo | `main` roto = nadie puede desplegar. Máxima prioridad |
+| A4 | Latencia p95 > 800 ms | Alta | Slack `#performance` | QA + Dev responsable | Investigar el commit que introdujo la degradación |
+| A5 | Tasa de error > 1 % bajo carga | Crítica | Slack + PagerDuty | Dev de turno | El sistema falla bajo carga normal: bloquear el despliegue |
+| A6 | TPS cae > 20 % respecto al promedio de los 5 builds previos | Media | Comentario en el PR | Autor del PR | Degradación gradual: revisar antes de que se acumule |
+| A7 | Una prueba pasa a ser inestable (*flaky*) | Media | Issue automático etiquetado `flaky` | QA | Estabilizar o cuarentena. Nunca ignorar |
+| A8 | La duración de la suite crece > 30 % | Media | Resumen semanal | Líder técnico | Optimizar o paralelizar antes de que el feedback se vuelva inútil |
+| A9 | El build vuelve a verde tras un fallo | Informativa | Slack `#ci-alertas` | Todo el equipo | Cerrar el incidente. Comunicar la recuperación también es parte de la alerta |
 
 **Escalamiento:** una alerta crítica sin atender en 30 minutos escala al líder
 técnico; a los 60 minutos, a la jefatura de desarrollo.
@@ -71,12 +71,12 @@ Ya está implementado en tres capas:
         with:
           payload: |
             {
-              "text": ":rotating_light: *Pipeline FALLIDO* en `${{ github.ref_name }}`",
+              "text": "*[FALLO] Pipeline fallido* en `${{ github.ref_name }}`",
               "blocks": [
                 { "type": "section", "text": { "type": "mrkdwn",
                   "text": "*Repositorio:* ${{ github.repository }}\n*Autor:* ${{ github.actor }}\n*Commit:* `${{ github.sha }}`" } },
                 { "type": "section", "text": { "type": "mrkdwn",
-                  "text": "*Unitarias:* ${{ needs.pruebas-unitarias.result }}\n*BDD:* ${{ needs.pruebas-bdd.result }}\n*Performance:* ${{ needs.performance.result }}" } },
+                  "text": "*Unitarias:* ${{ needs.pruebas-unitarias.result }}\n*Integración y BDD:* ${{ needs.pruebas-integracion.result }}\n*Performance:* ${{ needs.performance.result }}" } },
                 { "type": "actions", "elements": [
                   { "type": "button", "text": { "type": "plain_text", "text": "Ver el run" },
                     "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" } ] }
@@ -126,9 +126,9 @@ fi
 ```groovy
 post {
     failure  { mail to: 'equipo-qa@empresa.cl', subject: "[CI] FALLO en ${env.JOB_NAME} #${env.BUILD_NUMBER}", body: "..."
-               slackSend channel: '#alertas-qa', color: 'danger',  message: ":rotating_light: Build #${env.BUILD_NUMBER} FALLÓ" }
-    unstable { slackSend channel: '#alertas-qa', color: 'warning', message: ":warning: Build #${env.BUILD_NUMBER} INESTABLE" }
-    fixed    { slackSend channel: '#alertas-qa', color: 'good',    message: ":white_check_mark: Build #${env.BUILD_NUMBER} recuperado" }
+               slackSend channel: '#alertas-qa', color: 'danger',  message: "[FALLO] Build #${env.BUILD_NUMBER} FALLÓ" }
+    unstable { slackSend channel: '#alertas-qa', color: 'warning', message: "[INESTABLE] Build #${env.BUILD_NUMBER} INESTABLE" }
+    fixed    { slackSend channel: '#alertas-qa', color: 'good',    message: "[RECUPERADO] Build #${env.BUILD_NUMBER} recuperado" }
 }
 ```
 
@@ -155,17 +155,17 @@ post {
 ## 4. Simulación: cómo se ve una alerta real
 
 Mensaje que llega a `#ci-alertas` cuando el build #5 cruzó el umbral de latencia
-(escenario ilustrado en el dashboard):
+(escenario ilustrativo, no corresponde a una ejecución real):
 
 ```
-🚨  Pipeline FALLIDO en main
+[FALLO] Pipeline fallido en main
     Repositorio: WilliansMelgar02/taller1-ci-bdd
     Autor:       WilliansMelgar02
     Commit:      3f9a1c2
 
-    Unitarias:   ✅ success   (14/14)
-    BDD:         ✅ success   (8/8)
-    Performance: ❌ failure
+    Unitarias:   success   (14/14)
+    BDD:         success   (8/8)
+    Performance: FAILURE
 
     Umbral incumplido: http_req_duration p(95)=910ms  >  800ms
     Degradación: +920 % respecto de la línea base (89 ms)
@@ -176,7 +176,7 @@ Mensaje que llega a `#ci-alertas` cuando el build #5 cruzó el umbral de latenci
 Y el mensaje de recuperación (alerta A9) tras corregir:
 
 ```
-✅  Build #6 recuperado en main — p95 volvió a 120 ms. Incidente cerrado.
+[RECUPERADO] Build #6 recuperado en main — p95 volvió a 120 ms. Incidente cerrado.
 ```
 
 ---
