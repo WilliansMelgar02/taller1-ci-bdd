@@ -9,14 +9,33 @@ package cl.taller.qa;
  * el mensaje y los intentos restantes sin acceder a la implementacion
  * interna del servicio (bajo acoplamiento).</p>
  *
- * @param exitoso           true si las credenciales fueron validadas
+ * <p>El mismo objeto viaja serializado como cuerpo JSON de la API, por lo que
+ * sus componentes forman parte del contrato publico del servicio.</p>
+ *
+ * @param estado            desenlace del intento
  * @param mensaje           texto que la interfaz muestra al usuario
  * @param intentosRestantes intentos disponibles antes del bloqueo
- * @param cuentaBloqueada   true si la cuenta quedo bloqueada
  */
 public record ResultadoAutenticacion(
-        boolean exitoso,
+        EstadoAutenticacion estado,
         String mensaje,
-        int intentosRestantes,
-        boolean cuentaBloqueada) {
+        int intentosRestantes) {
+
+    /**
+     * Indica si el acceso fue concedido.
+     *
+     * @return true si las credenciales fueron validadas
+     */
+    public boolean exitoso() {
+        return estado == EstadoAutenticacion.CONCEDIDO;
+    }
+
+    /**
+     * Indica si el intento termino con la cuenta bloqueada.
+     *
+     * @return true si la cuenta quedo bloqueada
+     */
+    public boolean cuentaBloqueada() {
+        return estado == EstadoAutenticacion.CUENTA_BLOQUEADA;
+    }
 }
