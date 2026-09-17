@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal de Clientes</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="tarjeta">
+    <h1>Portal de Clientes</h1>
+    <p class="bajada">Ingresa con tu usuario y contraseña</p>
+
+    <!-- Los id son el contrato con las pruebas de aceptación (Page Object PaginaLogin):
+         cambiarlos sin actualizar las pruebas rompe el Acceptance Gate del pipeline. -->
+    <form id="formulario-login" novalidate>
+      <label for="usuario">Usuario</label>
+      <input id="usuario" name="usuario" autocomplete="username">
+
+      <label for="contrasena">Contraseña</label>
+      <input id="contrasena" name="contrasena" type="password" autocomplete="current-password">
+
+      <button id="boton-ingresar" type="submit">Ingresar</button>
+    </form>
+
+    <p id="mensaje" role="status" aria-live="polite" data-estado="inicial"></p>
+  </main>
+
+  <footer id="version-desplegada">Consultando versión…</footer>
+</body>
+</html>
