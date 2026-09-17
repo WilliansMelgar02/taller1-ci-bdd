@@ -121,7 +121,7 @@ jobs:
             .
 
       - name: Publicar la imagen versionada en el registro
-        run: docker push --quiet "${{ steps.artefacto.outputs.imagen }}"
+        run: ./infra/publicar-imagen.sh "${{ steps.artefacto.outputs.imagen }}"
 
       - name: Resumen del artefacto
         run: |
@@ -290,6 +290,11 @@ jobs:
       COMMIT: ${{ needs.empaquetar.outputs.commit }}
 
     steps:
+      - name: Descargar los scripts de despliegue
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
       - name: Iniciar sesión en GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -302,8 +307,7 @@ jobs:
           docker pull --quiet "$IMAGEN_APROBADA"
           for etiqueta in estable "$VERSION_BASE"; do
             docker tag "$IMAGEN_APROBADA" "${REPOSITORIO_IMAGEN}:${etiqueta}"
-            docker push --quiet "${REPOSITORIO_IMAGEN}:${etiqueta}"
-            echo "Publicada ${REPOSITORIO_IMAGEN}:${etiqueta}"
+            ./infra/publicar-imagen.sh "${REPOSITORIO_IMAGEN}:${etiqueta}"
           done
 
       - name: Registrar la versión en Git (tag y release)

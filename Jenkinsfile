@@ -171,7 +171,7 @@ pipeline {
                       --build-arg COMMIT_SHA="$(git rev-parse HEAD)" \
                       --build-arg FECHA_BUILD="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
                       --tag "$IMAGEN" .
-                    docker push "$IMAGEN"
+                    ./infra/publicar-imagen.sh "$IMAGEN"
                 '''
             }
         }
@@ -233,7 +233,7 @@ pipeline {
                 sh '''
                     for etiqueta in estable "$VERSION_BASE"; do
                       docker tag "$IMAGEN" "$REPOSITORIO_IMAGEN:$etiqueta"
-                      docker push "$REPOSITORIO_IMAGEN:$etiqueta"
+                      ./infra/publicar-imagen.sh "$REPOSITORIO_IMAGEN:$etiqueta"
                     done
                 '''
             }
