@@ -34,6 +34,7 @@
     <junit.platform.version>1.11.4</junit.platform.version>
     <cucumber.version>7.20.1</cucumber.version>
     <gson.version>2.14.0</gson.version>
+    <selenium.version>4.49.0</selenium.version>
 
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.jar.version>3.4.2</maven.jar.version>
@@ -51,6 +52,15 @@
 
     <!-- Permite al pipeline ejecutar solo la etapa BDD sin repetir las unitarias -->
     <skipUnitTests>false</skipUnitTests>
+
+    <!-- Base vacia para @{argLine}: si JaCoCo se omite (perfil aceptacion),
+         la JVM de las pruebas igual recibe un argumento valido. -->
+    <argLine></argLine>
+
+    <!-- Ambiente contra el que corren las pruebas de aceptacion (perfil aceptacion) -->
+    <url.base>http://localhost:8080</url.base>
+    <version.esperada></version.esperada>
+    <navegador.visible>false</navegador.visible>
   </properties>
 
   <!-- ================================================================
@@ -111,6 +121,14 @@
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-junit-platform-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Selenium WebDriver: pruebas de aceptacion sobre la interfaz web desplegada -->
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>${selenium.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -232,6 +250,11 @@
           <includes>
             <include>**/*IT.java</include>
           </includes>
+          <!-- Las pruebas de aceptacion necesitan la aplicacion desplegada:
+               no corren en 'mvn verify', sino con el perfil 'aceptacion'. -->
+          <excludes>
+            <exclude>**/aceptacion/**</exclude>
+          </excludes>
           <!-- La JVM que se lanza para las pruebas debe escribir en UTF-8:
                sin esto, los acentos y la enie de los escenarios en espanol
                salen corruptos en la consola y en los logs del pipeline. -->
@@ -337,6 +360,41 @@
       </plugin>
     </plugins>
   </build>
+
+  <!-- ================================================================
+       Perfil ACEPTACION = Acceptance Gate del deployment pipeline.
+       Ejecuta solo EjecutorAceptacionIT contra una aplicacion ya
+       desplegada; omite las unitarias y la cobertura porque esas ya
+       corrieron en la etapa de commit sobre el mismo commit.
+
+         mvn verify -Paceptacion -Durl.base=http://localhost:8082                     -Dversion.esperada=1.1.0-a1b2c3d
+       ================================================================ -->
+  <profiles>
+    <profile>
+      <id>aceptacion</id>
+      <properties>
+        <skipUnitTests>true</skipUnitTests>
+        <jacoco.skip>true</jacoco.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <!-- 'test' reemplaza a includes/excludes: corre solo la suite de aceptacion -->
+              <test>EjecutorAceptacionIT</test>
+              <systemPropertyVariables>
+                <url.base>${url.base}</url.base>
+                <version.esperada>${version.esperada}</version.esperada>
+                <navegador.visible>${navegador.visible}</navegador.visible>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <!-- ================================================================
        Reporting: 'mvn site' produce el reporte HTML navegable de Surefire
