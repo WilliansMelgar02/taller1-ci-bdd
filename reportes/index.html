@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard de Calidad · Taller 1 Unidad II</title>
+<title>Dashboard de Calidad · Portal de Clientes</title>
 <style>
   :root{
     color-scheme: light;
@@ -55,6 +55,8 @@
   .rejilla{stroke:var(--rejilla);stroke-width:1}
   .base{stroke:var(--linea-base);stroke-width:1}
   .umbral{stroke:var(--critico);stroke-width:2;stroke-dasharray:5 4}
+  .corte{stroke:var(--tinta-mute);stroke-width:1.5;stroke-dasharray:4 4}
+  .anotacion{font-size:11.5px;fill:var(--tinta-2)}
   .etiqueta-umbral{font-size:11px;font-weight:600;fill:var(--critico)}
 
   .leyenda{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 12px;font-size:12px;color:var(--tinta-2)}
@@ -75,20 +77,29 @@
   .enlace strong{display:block;font-size:13.5px;margin-bottom:3px}
   .enlace span{font-size:12px;color:var(--tinta-mute)}
 
+  .icono{display:inline-block;width:13px;height:13px;flex:none;vertical-align:-2px;overflow:visible;
+         fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
   footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--borde);font-size:12px;color:var(--tinta-mute)}
 </style>
 </head>
 <body>
 
+<!-- Íconos SVG embebidos (set Lucide, licencia MIT): sin dependencias externas ni emojis -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+
 <header class="principal">
   <div class="contenedor">
     <h1>Dashboard de Calidad · Pipeline de Pruebas Automatizadas</h1>
-    <p class="subtitulo">Proyecto <strong>taller1-ci-bdd</strong> · Portal de Clientes · Taller 1, Evaluación Unidad II</p>
+    <p class="subtitulo">Proyecto <strong>taller1-ci-bdd</strong> · Portal de Clientes · Examen Final, Automatización de Pruebas</p>
     <div class="meta">
       <span class="chip">Rama <strong>main</strong></span>
-      <span class="chip">Build #10</span>
-      <span class="chip">JDK 17 · Maven 3.9.9</span>
-      <span class="chip ok">✔ Pipeline en verde</span>
+      <span class="chip">CI build #65</span>
+      <span class="chip">JDK 17 · Maven 3.9.9 · k6</span>
+      <span class="chip ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CI en verde</span>
+      <span class="chip ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> Despliegue Blue-Green en verde</span>
     </div>
   </div>
 </header>
@@ -97,112 +108,124 @@
 
   <!-- ================== FILA DE INDICADORES ================== -->
   <h2>Indicadores del último build</h2>
-  <p class="nota">Valores medidos en la ejecución real del 29-08-2026. Cada indicador tiene un umbral que el pipeline verifica automáticamente.</p>
+  <p class="nota">Valores medidos en el pipeline de <code>main</code> del 16-09-2026 (CI build #65 y su deployment pipeline).
+     Cada indicador tiene un umbral que el pipeline verifica automáticamente.</p>
   <div class="kpis">
     <div class="kpi">
       <div class="etiqueta">Pruebas unitarias</div>
-      <div class="valor">28 <span class="unidad">/ 28</span></div>
-      <div class="estado ok">✔ 0 fallos</div>
+      <div class="valor">44 <span class="unidad">/ 44</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> 0 fallos</div>
+    </div>
+    <div class="kpi">
+      <div class="etiqueta">Pruebas de integración</div>
+      <div class="valor">11 <span class="unidad">/ 11</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> 0 fallos</div>
     </div>
     <div class="kpi">
       <div class="etiqueta">Escenarios BDD</div>
       <div class="valor">8 <span class="unidad">/ 8</span></div>
-      <div class="estado ok">✔ 0 fallos</div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> 0 fallos</div>
     </div>
     <div class="kpi">
-      <div class="etiqueta">Tasa de éxito</div>
-      <div class="valor">100 <span class="unidad">%</span></div>
-      <div class="pie">36 pruebas totales</div>
+      <div class="etiqueta">Aceptación en staging</div>
+      <div class="valor">8 <span class="unidad">/ 8</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> Acceptance Gate</div>
     </div>
     <div class="kpi">
-      <div class="etiqueta">Latencia p95</div>
-      <div class="valor">94 <span class="unidad">ms</span></div>
-      <div class="estado ok">✔ umbral &lt; 800 ms</div>
-    </div>
-    <div class="kpi">
-      <div class="etiqueta">Throughput</div>
-      <div class="valor">5,91 <span class="unidad">TPS</span></div>
-      <div class="estado ok">✔ umbral &gt; 5 TPS</div>
+      <div class="etiqueta">Análisis estático</div>
+      <div class="valor">0 <span class="unidad">hallazgos</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> SpotBugs + FindSecBugs</div>
     </div>
     <div class="kpi">
       <div class="etiqueta">Cobertura</div>
-      <div class="valor">99,1 <span class="unidad">%</span></div>
-      <div class="estado ok">&#10003; umbral &gt; 80 %</div>
+      <div class="valor">88,8 <span class="unidad">%</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> umbral &gt; 80 %</div>
+    </div>
+    <div class="kpi">
+      <div class="etiqueta">Latencia p95</div>
+      <div class="valor">1,37 <span class="unidad">ms</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> umbral &lt; 800 ms</div>
+    </div>
+    <div class="kpi">
+      <div class="etiqueta">Throughput</div>
+      <div class="valor">6,47 <span class="unidad">TPS</span></div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> umbral &gt; 5 TPS</div>
     </div>
     <div class="kpi">
       <div class="etiqueta">Tasa de error</div>
       <div class="valor">0,00 <span class="unidad">%</span></div>
-      <div class="estado ok">✔ umbral &lt; 1 %</div>
+      <div class="estado ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> umbral &lt; 1 %</div>
     </div>
   </div>
 
   <!-- ================== LATENCIA POR PERCENTIL ================== -->
   <h2>Distribución de la latencia del login</h2>
-  <p class="nota">328 peticiones medidas con k6 sobre <code>POST /api/login</code>. El promedio esconde la cola: por eso se
-     monitorea el percentil 95, que representa la experiencia del 5 % de usuarios peor atendidos.</p>
+  <p class="nota">356 peticiones medidas con k6 sobre <code>POST /api/login</code> del portal real (el mismo jar que se despliega).
+     Escala de 0 a 2,5 ms: el umbral del SLA (800 ms) queda fuera del gráfico, unas 580 veces por encima del p95 medido.</p>
   <div class="panel">
-    <svg viewBox="0 0 880 250" role="img" aria-label="Latencia por percentil comparada con el umbral de 800 milisegundos">
-      <!-- rejilla vertical cada 100 ms sobre una escala 0-800 -->
+    <svg viewBox="0 0 880 250" role="img" aria-label="Latencia por percentil del login en milisegundos">
+      <!-- rejilla vertical cada 0,25 ms sobre una escala 0-2,5 ms (256 px por ms) -->
       <g class="rejilla">
-        <line x1="150" y1="14" x2="150" y2="208"/>
-        <line x1="230" y1="14" x2="230" y2="208"/>
-        <line x1="310" y1="14" x2="310" y2="208"/>
-        <line x1="390" y1="14" x2="390" y2="208"/>
+        <line x1="214" y1="14" x2="214" y2="208"/>
+        <line x1="278" y1="14" x2="278" y2="208"/>
+        <line x1="342" y1="14" x2="342" y2="208"/>
+        <line x1="406" y1="14" x2="406" y2="208"/>
         <line x1="470" y1="14" x2="470" y2="208"/>
-        <line x1="550" y1="14" x2="550" y2="208"/>
-        <line x1="630" y1="14" x2="630" y2="208"/>
-        <line x1="710" y1="14" x2="710" y2="208"/>
+        <line x1="534" y1="14" x2="534" y2="208"/>
+        <line x1="598" y1="14" x2="598" y2="208"/>
+        <line x1="662" y1="14" x2="662" y2="208"/>
+        <line x1="726" y1="14" x2="726" y2="208"/>
+        <line x1="790" y1="14" x2="790" y2="208"/>
       </g>
       <line class="base" x1="150" y1="208" x2="790" y2="208"/>
 
-      <!-- barras: escala 0-800 ms sobre 640 px  =>  0,8 px por ms -->
       <g>
         <text class="eje" x="140" y="30" text-anchor="end">mínimo</text>
-        <rect x="150" y="19" width="27.8" height="15" rx="4" fill="var(--serie-1)"><title>Latencia mínima: 34,77 ms</title></rect>
-        <text class="valor-directo" x="186" y="31">34,8 ms</text>
+        <rect x="150" y="19" width="118.4" height="15" rx="4" fill="var(--serie-1)"><title>Latencia mínima: 0,46 ms</title></rect>
+        <text class="valor-directo" x="277" y="31">0,46 ms</text>
 
         <text class="eje" x="140" y="60" text-anchor="end">mediana (p50)</text>
-        <rect x="150" y="49" width="52.6" height="15" rx="4" fill="var(--serie-1)"><title>Mediana: 65,80 ms</title></rect>
-        <text class="valor-directo" x="211" y="61">65,8 ms</text>
+        <rect x="150" y="49" width="213.4" height="15" rx="4" fill="var(--serie-1)"><title>Mediana: 0,83 ms</title></rect>
+        <text class="valor-directo" x="372" y="61">0,83 ms</text>
 
         <text class="eje" x="140" y="90" text-anchor="end">promedio</text>
-        <rect x="150" y="79" width="60.9" height="15" rx="4" fill="var(--serie-1)"><title>Promedio: 76,16 ms</title></rect>
-        <text class="valor-directo" x="219" y="91">76,2 ms</text>
+        <rect x="150" y="79" width="235.5" height="15" rx="4" fill="var(--serie-1)"><title>Promedio: 0,92 ms</title></rect>
+        <text class="valor-directo" x="394" y="91">0,92 ms</text>
 
         <text class="eje" x="140" y="120" text-anchor="end">p90</text>
-        <rect x="150" y="109" width="70.1" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 90: 87,60 ms</title></rect>
-        <text class="valor-directo" x="228" y="121">87,6 ms</text>
+        <rect x="150" y="109" width="291.5" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 90: 1,14 ms</title></rect>
+        <text class="valor-directo" x="450" y="121">1,14 ms</text>
 
         <text class="eje" x="140" y="150" text-anchor="end">p95</text>
-        <rect x="150" y="139" width="75.1" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 95: 93,90 ms — indicador contractual del SLA</title></rect>
-        <text class="valor-directo" x="233" y="151">93,9 ms</text>
+        <rect x="150" y="139" width="351.2" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 95: 1,37 ms — indicador contractual del SLA</title></rect>
+        <text class="valor-directo" x="510" y="151">1,37 ms</text>
 
         <text class="eje" x="140" y="180" text-anchor="end">p99</text>
-        <rect x="150" y="169" width="263.3" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 99: 329,18 ms — la cola larga del 3 % de peticiones lentas</title></rect>
-        <text class="valor-directo" x="422" y="181">329,2 ms</text>
+        <rect x="150" y="169" width="588.7" height="15" rx="4" fill="var(--serie-1)"><title>Percentil 99: 2,30 ms</title></rect>
+        <text class="valor-directo" x="747" y="181">2,30 ms</text>
       </g>
 
-      <!-- umbral SLA -->
-      <line class="umbral" x1="790" y1="14" x2="790" y2="208"/>
-      <text class="etiqueta-umbral" x="786" y="228" text-anchor="end">umbral SLA p95 &lt; 800 ms</text>
-
       <text class="eje" x="150" y="228">0</text>
-      <text class="eje" x="390" y="228" text-anchor="middle">300 ms</text>
-      <text class="eje" x="630" y="228" text-anchor="middle">600 ms</text>
+      <text class="eje" x="278" y="228" text-anchor="middle">0,5 ms</text>
+      <text class="eje" x="406" y="228" text-anchor="middle">1 ms</text>
+      <text class="eje" x="534" y="228" text-anchor="middle">1,5 ms</text>
+      <text class="eje" x="662" y="228" text-anchor="middle">2 ms</text>
+      <text class="eje" x="790" y="228" text-anchor="middle">2,5 ms</text>
     </svg>
   </div>
 
   <!-- ================== EVOLUCIÓN p95 ================== -->
-  <h2>Evolución de la latencia p95 por build</h2>
-  <p class="nota">Serie histórica <strong>simulada</strong> de los 10 últimos builds para ilustrar la detección de degradaciones;
-     el build #10 corresponde a la medición real de este proyecto. El build #5 cruzó el umbral y disparó la alerta automática.</p>
+  <h2>Evolución de la latencia p95 por build de main</h2>
+  <p class="nota">Mediciones reales de la etapa de performance en cada build de <code>main</code>. Hasta el build #52 k6 medía un
+     servidor <em>mock</em> que agregaba entre 35 y 80 ms de latencia simulada; desde el #53 (PR #4) mide el portal real.
+     El salto no es una optimización: es la diferencia entre medir una simulación y medir el artefacto que se entrega.</p>
   <div class="panel">
     <div class="leyenda">
       <span><i style="background:var(--serie-1)"></i>Latencia p95 por build</span>
-      <span><i style="background:var(--critico)"></i>Umbral SLA (800 ms)</span>
+      <span><i style="background:var(--tinta-mute)"></i>Cambio de sistema bajo prueba</span>
     </div>
-    <svg viewBox="0 0 880 260" role="img" aria-label="Evolución de la latencia p95 en los últimos diez builds">
-      <!-- escala Y: 0 a 1000 ms sobre 190 px (y=210 es 0, y=20 es 1000) -->
+    <svg viewBox="0 0 880 260" role="img" aria-label="Evolución de la latencia p95 en los builds 50 a 65 de main">
+      <!-- escala Y: 0 a 100 ms sobre 190 px (y = 210 - ms * 1,9) -->
       <g class="rejilla">
         <line x1="60" y1="210" x2="850" y2="210"/>
         <line x1="60" y1="172" x2="850" y2="172"/>
@@ -212,48 +235,42 @@
         <line x1="60" y1="20"  x2="850" y2="20"/>
       </g>
       <text class="eje" x="52" y="214" text-anchor="end">0</text>
-      <text class="eje" x="52" y="176" text-anchor="end">200</text>
-      <text class="eje" x="52" y="138" text-anchor="end">400</text>
-      <text class="eje" x="52" y="100" text-anchor="end">600</text>
-      <text class="eje" x="52" y="62"  text-anchor="end">800</text>
-      <text class="eje" x="52" y="24"  text-anchor="end">1000 ms</text>
+      <text class="eje" x="52" y="176" text-anchor="end">20</text>
+      <text class="eje" x="52" y="138" text-anchor="end">40</text>
+      <text class="eje" x="52" y="100" text-anchor="end">60</text>
+      <text class="eje" x="52" y="62"  text-anchor="end">80</text>
+      <text class="eje" x="52" y="24"  text-anchor="end">100 ms</text>
 
-      <!-- umbral 800 ms  =>  y = 210 - 800*0,19 = 58 -->
-      <line class="umbral" x1="60" y1="58" x2="850" y2="58"/>
-      <text class="etiqueta-umbral" x="850" y="52" text-anchor="end">SLA 800 ms</text>
+      <line class="corte" x1="322.45" y1="14" x2="322.45" y2="210"/>
+      <text class="anotacion" x="312" y="36" text-anchor="end">servidor mock</text>
+      <text class="anotacion" x="400" y="190">portal real (jar desplegable)</text>
 
-      <!-- serie: 96, 102, 88, 91, 910, 120, 94, 90, 87, 89 ms -->
-      <!-- escala: y = 210 - milisegundos * 0,19 -->
+      <!-- serie real: #50 78,00 · #51 79,76 · #52 79,42 · #53 1,35 · #54 1,29 · #55 1,24 · #58 1,34 · #61 1,27 · #65 1,37 ms -->
       <polyline fill="none" stroke="var(--serie-1)" stroke-width="2" stroke-linejoin="round"
-        points="89,192 172,191 255,193 338,193 421,37 504,187 587,192 670,193 753,193 836,193"/>
+        points="89,61.8 182.4,58.5 275.8,59.1 369.1,207.4 462.5,207.5 555.9,207.6 649.3,207.5 742.6,207.6 836,207.4"/>
 
       <g fill="var(--serie-1)">
-        <circle cx="89"  cy="192" r="4.5"><title>Build #1 — p95 96 ms</title></circle>
-        <circle cx="172" cy="191" r="4.5"><title>Build #2 — p95 102 ms</title></circle>
-        <circle cx="255" cy="193" r="4.5"><title>Build #3 — p95 88 ms</title></circle>
-        <circle cx="338" cy="193" r="4.5"><title>Build #4 — p95 91 ms</title></circle>
-        <circle cx="504" cy="187" r="4.5"><title>Build #6 — p95 120 ms (tras la corrección)</title></circle>
-        <circle cx="587" cy="192" r="4.5"><title>Build #7 — p95 94 ms</title></circle>
-        <circle cx="670" cy="193" r="4.5"><title>Build #8 — p95 90 ms</title></circle>
-        <circle cx="753" cy="193" r="4.5"><title>Build #9 — p95 87 ms</title></circle>
+        <circle cx="89"    cy="61.8"  r="4.5"><title>Build #50 — p95 78,00 ms (mock)</title></circle>
+        <circle cx="182.4" cy="58.5"  r="4.5"><title>Build #51 — p95 79,76 ms (mock)</title></circle>
+        <circle cx="275.8" cy="59.1"  r="4.5"><title>Build #52 — p95 79,42 ms (mock)</title></circle>
+        <circle cx="369.1" cy="207.4" r="4.5"><title>Build #53 — p95 1,35 ms (portal real)</title></circle>
+        <circle cx="462.5" cy="207.5" r="4.5"><title>Build #54 — p95 1,29 ms</title></circle>
+        <circle cx="555.9" cy="207.6" r="4.5"><title>Build #55 — p95 1,24 ms</title></circle>
+        <circle cx="649.3" cy="207.5" r="4.5"><title>Build #58 — p95 1,34 ms</title></circle>
+        <circle cx="742.6" cy="207.6" r="4.5"><title>Build #61 — p95 1,27 ms</title></circle>
       </g>
-      <!-- build en falla: color de estado + etiqueta, nunca color solo -->
-      <circle cx="421" cy="37" r="6" fill="var(--critico)" stroke="var(--superficie)" stroke-width="2">
-        <title>Build #5 — p95 910 ms: umbral incumplido, alerta disparada</title></circle>
-      <text class="etiqueta-umbral" x="421" y="28" text-anchor="middle">⚠ 910 ms · alerta</text>
-      <!-- build actual, real -->
-      <circle cx="836" cy="193" r="6" fill="var(--serie-1)" stroke="var(--superficie)" stroke-width="2">
-        <title>Build #10 — p95 93,90 ms (medición real)</title></circle>
-      <text class="valor-directo" x="836" y="182" text-anchor="middle">94 ms</text>
+      <circle cx="836" cy="207.4" r="6" fill="var(--serie-1)" stroke="var(--superficie)" stroke-width="2">
+        <title>Build #65 — p95 1,37 ms (último build)</title></circle>
+      <text class="valor-directo" x="836" y="196" text-anchor="middle">1,37 ms</text>
+      <text class="valor-directo" x="89" y="50" text-anchor="middle">78 ms</text>
 
       <line class="base" x1="60" y1="210" x2="850" y2="210"/>
       <g class="eje" text-anchor="middle">
-        <text x="89"  y="228">#1</text><text x="172" y="228">#2</text><text x="255" y="228">#3</text>
-        <text x="338" y="228">#4</text><text x="421" y="228">#5</text><text x="504" y="228">#6</text>
-        <text x="587" y="228">#7</text><text x="670" y="228">#8</text><text x="753" y="228">#9</text>
-        <text x="836" y="228">#10</text>
+        <text x="89" y="228">#50</text><text x="182.4" y="228">#51</text><text x="275.8" y="228">#52</text>
+        <text x="369.1" y="228">#53</text><text x="462.5" y="228">#54</text><text x="555.9" y="228">#55</text>
+        <text x="649.3" y="228">#58</text><text x="742.6" y="228">#61</text><text x="836" y="228">#65</text>
       </g>
-      <text class="eje" x="455" y="250" text-anchor="middle">Número de build</text>
+      <text class="eje" x="455" y="250" text-anchor="middle">Build de main (umbral del SLA: 800 ms, fuera de escala)</text>
     </svg>
   </div>
 
@@ -265,24 +282,27 @@
       <tr><th>Métrica</th><th class="num">Valor medido</th><th class="num">Umbral</th><th>Resultado</th><th>Origen</th></tr>
     </thead>
     <tbody>
-      <tr><td>Pruebas unitarias ejecutadas</td><td class="num">28</td><td class="num">&ge; 2</td><td class="ok">✔ CUMPLE</td><td>Surefire</td></tr>
-      <tr><td>Escenarios BDD ejecutados</td><td class="num">8</td><td class="num">&ge; 2</td><td class="ok">✔ CUMPLE</td><td>Cucumber</td></tr>
-      <tr><td>Pruebas fallidas</td><td class="num">0</td><td class="num">0</td><td class="ok">✔ CUMPLE</td><td>Surefire + Failsafe</td></tr>
-      <tr><td>Peticiones de carga</td><td class="num">328</td><td class="num">&mdash;</td><td class="ok">✔</td><td>k6</td></tr>
-      <tr><td>Throughput (TPS)</td><td class="num">5,91</td><td class="num">&gt; 5</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Latencia promedio</td><td class="num">76,16 ms</td><td class="num">&lt; 400 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Latencia p95</td><td class="num">93,90 ms</td><td class="num">&lt; 800 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Latencia p99</td><td class="num">329,18 ms</td><td class="num">&lt; 1500 ms</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Tasa de error técnico</td><td class="num">0,00 %</td><td class="num">&lt; 1 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
-      <tr><td>Cobertura de instrucciones</td><td class="num">99,1 %</td><td class="num">&gt; 80 %</td><td class="ok">&#10003; CUMPLE</td><td>JaCoCo</td></tr>
-      <tr><td>Clase peor cubierta</td><td class="num">98,8 %</td><td class="num">&gt; 70 %</td><td class="ok">&#10003; CUMPLE</td><td>JaCoCo</td></tr>
-      <tr><td>Checks funcionales bajo carga</td><td class="num">100 %</td><td class="num">&gt; 99 %</td><td class="ok">✔ CUMPLE</td><td>k6</td></tr>
+      <tr><td>Hallazgos de análisis estático (prioridad media o alta)</td><td class="num">0</td><td class="num">0</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>SpotBugs + FindSecBugs</td></tr>
+      <tr><td>Pruebas unitarias ejecutadas</td><td class="num">44</td><td class="num">0 fallos</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>Surefire</td></tr>
+      <tr><td>Pruebas de integración ejecutadas</td><td class="num">11</td><td class="num">0 fallos</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>Failsafe</td></tr>
+      <tr><td>Escenarios BDD ejecutados</td><td class="num">8</td><td class="num">0 fallos</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>Cucumber</td></tr>
+      <tr><td>Pruebas de aceptación en staging</td><td class="num">8</td><td class="num">0 fallos</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>Cucumber + Selenium</td></tr>
+      <tr><td>Cobertura de instrucciones</td><td class="num">88,8 %</td><td class="num">&gt; 80 %</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>JaCoCo</td></tr>
+      <tr><td>Cobertura de ramas</td><td class="num">87,1 %</td><td class="num">&gt; 70 %</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>JaCoCo</td></tr>
+      <tr><td>Clase peor cubierta (sujeta a umbral)</td><td class="num">71,4 %</td><td class="num">&gt; 70 %</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>JaCoCo</td></tr>
+      <tr><td>Peticiones de carga</td><td class="num">356</td><td class="num">&mdash;</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg></td><td>k6</td></tr>
+      <tr><td>Throughput (TPS)</td><td class="num">6,47</td><td class="num">&gt; 5</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>k6</td></tr>
+      <tr><td>Latencia promedio</td><td class="num">0,92 ms</td><td class="num">&lt; 400 ms</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>k6</td></tr>
+      <tr><td>Latencia p95</td><td class="num">1,37 ms</td><td class="num">&lt; 800 ms</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>k6</td></tr>
+      <tr><td>Latencia p99</td><td class="num">2,30 ms</td><td class="num">&lt; 1500 ms</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>k6</td></tr>
+      <tr><td>Tasa de error técnico</td><td class="num">0,00 %</td><td class="num">&lt; 1 %</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>k6</td></tr>
+      <tr><td>Checks funcionales bajo carga</td><td class="num">100 %</td><td class="num">&gt; 99 %</td><td class="ok"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg> CUMPLE</td><td>k6</td></tr>
     </tbody>
   </table>
 
   <!-- ================== ENLACES A REPORTES ================== -->
   <h2>Reportes navegables publicados por el pipeline</h2>
-  <p class="nota">Cada build publica estos reportes en GitHub Pages; quedan accesibles para todo el equipo sin necesidad de descargar artefactos.</p>
+  <p class="nota">Cada build de main publica estos reportes en GitHub Pages; quedan accesibles para todo el equipo sin descargar artefactos.</p>
   <div class="enlaces">
     <a class="enlace" href="./bdd/reporte-bdd.html">
       <strong>Reporte BDD · Cucumber</strong>
@@ -293,27 +313,30 @@
       <span>Detalle por clase y por caso</span>
     </a>
     <a class="enlace" href="./pruebas/failsafe.html">
-      <strong>Pruebas de aceptación · Failsafe</strong>
-      <span>Resultado de la suite de integración</span>
-    </a>
-    <a class="enlace" href="./evidencias/index.html">
-      <strong>Indice de evidencias</strong>
-      <span>Cada captura y lo que demuestra</span>
+      <strong>Integración y BDD · Failsafe</strong>
+      <span>API HTTP real y escenarios de negocio</span>
     </a>
     <a class="enlace" href="./cobertura/index.html">
-      <strong>Cobertura &middot; JaCoCo</strong>
-      <span>Detalle por clase, metodo y linea</span>
+      <strong>Cobertura · JaCoCo</strong>
+      <span>Detalle por clase, método y línea</span>
     </a>
     <a class="enlace" href="./performance/reporte-performance.html">
       <strong>Performance · k6</strong>
       <span>Indicadores frente a los umbrales del SLA</span>
     </a>
+    <a class="enlace" href="./evidencias/index.html">
+      <strong>Índice de evidencias</strong>
+      <span>Cada captura y lo que demuestra</span>
+    </a>
+    <a class="enlace" href="https://github.com/WilliansMelgar02/taller1-ci-bdd/actions/workflows/despliegue.yml">
+      <strong>Deployment pipeline · Blue-Green</strong>
+      <span>Despliegues en staging, Acceptance Gate y rollbacks</span>
+    </a>
   </div>
 
   <footer>
-    Generado automáticamente por el pipeline <strong>CI · Pruebas Automatizadas</strong> ·
-    Willians Melgar · Evaluación Unidad II ·
-    Los valores de los builds #1 a #9 son simulados con fines demostrativos; el build #10 corresponde a mediciones reales.
+    Publicado por el pipeline <strong>CI · Pruebas Automatizadas</strong> · Willians Melgar · Examen Final, Automatización de Pruebas ·
+    Todos los valores provienen de ejecuciones reales del pipeline.
   </footer>
 </div>
 </body>

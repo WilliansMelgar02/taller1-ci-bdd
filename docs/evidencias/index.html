@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Índice de evidencias · Taller 1</title>
+<title>Índice de evidencias · Portal de Clientes</title>
 <style>
   :root{
     color-scheme: light;
@@ -39,10 +39,10 @@
   footer{text-align:center;color:var(--tinta-mute);font-size:12.5px;padding:22px}
 </style></head><body>
 <header class="top">
-  <h1>Índice de evidencias &mdash; Taller 1, Unidad II</h1>
-  <p>Las 18 capturas que respaldan el informe, cada una junto a lo que demuestra y a la figura
-     en la que aparece. Todas corresponden a ejecuciones reales.
-     <a href="../../">Volver al dashboard</a></p>
+  <h1>Índice de evidencias &mdash; Portal de Clientes</h1>
+  <p>Las 34 capturas que respaldan el informe, cada una junto a lo que demuestra. Primero las del
+     examen final y después las del Taller 1. Todas corresponden a ejecuciones reales.
+     <a href="../">Volver al dashboard</a></p>
 </header>
 <main>
 
@@ -50,8 +50,232 @@
     <header>
       <span class="n">1</span>
       <div class="titulo">
+        <h2>20-pull-requests-integrados.png</h2>
+        <p class="meta">Examen final · Actividad 1 &middot; 132 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Pull Requests del flujo Trunk-Based: <b>#1 a #10 integrados</b> y el <b>#8 cerrado sin integrar</b> (demostración de rollback)</p>
+    <a href="20-pull-requests-integrados.png" target="_blank" rel="noopener">
+      <img src="20-pull-requests-integrados.png" alt="20-pull-requests-integrados.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">2</span>
+      <div class="titulo">
+        <h2>21-historial-main.png</h2>
+        <p class="meta">Examen final · Actividad 1 &middot; 202 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Historial de <code>main</code>: un <b>merge commit por PR</b> sobre ramas cortas con Conventional Commits</p>
+    <a href="21-historial-main.png" target="_blank" rel="noopener">
+      <img src="21-historial-main.png" alt="21-historial-main.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">3</span>
+      <div class="titulo">
+        <h2>22-pom-dependencias.png</h2>
+        <p class="meta">Examen final · Actividad 1 &middot; 80 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Dependencias del <code>pom.xml</code>: <b>Gson</b>, <b>JUnit 5</b>, <b>Cucumber</b> y <b>Selenium</b></p>
+    <a href="22-pom-dependencias.png" target="_blank" rel="noopener">
+      <img src="22-pom-dependencias.png" alt="22-pom-dependencias.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">4</span>
+      <div class="titulo">
+        <h2>23-ci-pipeline-main.png</h2>
+        <p class="meta">Examen final · Actividad 2 &middot; 125 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Pipeline de CI en <code>main</code> (build #65): <b>cinco etapas en verde</b> y sus artefactos</p>
+    <a href="23-ci-pipeline-main.png" target="_blank" rel="noopener">
+      <img src="23-ci-pipeline-main.png" alt="23-ci-pipeline-main.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">5</span>
+      <div class="titulo">
+        <h2>24-despliegue-blue-green-main.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 81 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Deployment pipeline en <code>main</code>: <b>empaquetar, Blue-Green con Acceptance Gate y promoción</b> en verde</p>
+    <a href="24-despliegue-blue-green-main.png" target="_blank" rel="noopener">
+      <img src="24-despliegue-blue-green-main.png" alt="24-despliegue-blue-green-main.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">6</span>
+      <div class="titulo">
+        <h2>25-rollback-automatico-run.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 126 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Despliegue del defecto intencional: <b>Acceptance Gate en rojo</b> con los dos escenarios fallidos y <b>promoción omitida</b></p>
+    <a href="25-rollback-automatico-run.png" target="_blank" rel="noopener">
+      <img src="25-rollback-automatico-run.png" alt="25-rollback-automatico-run.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">7</span>
+      <div class="titulo">
+        <h2>26-pr-demo-rollback.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 143 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> PR #8: el defecto, el resultado esperado de cada etapa y el registro <b>"had a problem deploying to staging"</b></p>
+    <a href="26-pr-demo-rollback.png" target="_blank" rel="noopener">
+      <img src="26-pr-demo-rollback.png" alt="26-pr-demo-rollback.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">8</span>
+      <div class="titulo">
+        <h2>27-rollback-manual-run.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 71 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Rollback manual asistido: versión <b>1.1.0-4c77e2c</b> restaurada y validada</p>
+    <a href="27-rollback-manual-run.png" target="_blank" rel="noopener">
+      <img src="27-rollback-manual-run.png" alt="27-rollback-manual-run.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">9</span>
+      <div class="titulo">
+        <h2>28-release-v1-1-0.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 69 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Release <b>v1.1.0</b> creada automáticamente por la etapa de promoción</p>
+    <a href="28-release-v1-1-0.png" target="_blank" rel="noopener">
+      <img src="28-release-v1-1-0.png" alt="28-release-v1-1-0.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">10</span>
+      <div class="titulo">
+        <h2>30-reporte-aceptacion-verde.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 32 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte del Acceptance Gate en staging: <b>8 PASSED</b> (API y portal web con Selenium)</p>
+    <a href="30-reporte-aceptacion-verde.png" target="_blank" rel="noopener">
+      <img src="30-reporte-aceptacion-verde.png" alt="30-reporte-aceptacion-verde.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">11</span>
+      <div class="titulo">
+        <h2>31-reporte-aceptacion-rollback.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 172 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte del Acceptance Gate con el defecto: <b>2 FAILED</b>, con la traza y la captura adjunta</p>
+    <a href="31-reporte-aceptacion-rollback.png" target="_blank" rel="noopener">
+      <img src="31-reporte-aceptacion-rollback.png" alt="31-reporte-aceptacion-rollback.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">12</span>
+      <div class="titulo">
+        <h2>32-selenium-captura-del-fallo.png</h2>
+        <p class="meta">Examen final · Actividad 3 &middot; 27 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Captura tomada por <b>Selenium en GREEN</b> (versión 1.1.0-a351700): el cliente no puede ingresar</p>
+    <a href="32-selenium-captura-del-fallo.png" target="_blank" rel="noopener">
+      <img src="32-selenium-captura-del-fallo.png" alt="32-selenium-captura-del-fallo.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">13</span>
+      <div class="titulo">
+        <h2>33-reporte-analisis-estatico.png</h2>
+        <p class="meta">Examen final · Actividad 2 &middot; 50 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> SpotBugs + Find Security Bugs: <b>15 clases analizadas, 0 advertencias</b></p>
+    <a href="33-reporte-analisis-estatico.png" target="_blank" rel="noopener">
+      <img src="33-reporte-analisis-estatico.png" alt="33-reporte-analisis-estatico.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">14</span>
+      <div class="titulo">
+        <h2>34-reporte-integracion-failsafe.png</h2>
+        <p class="meta">Examen final · Actividad 2 &middot; 106 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Reporte de Failsafe publicado: <b>19 pruebas</b> (11 de integración y 8 escenarios BDD), 100 % de éxito</p>
+    <a href="34-reporte-integracion-failsafe.png" target="_blank" rel="noopener">
+      <img src="34-reporte-integracion-failsafe.png" alt="34-reporte-integracion-failsafe.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">15</span>
+      <div class="titulo">
+        <h2>35-dashboard-calidad.png</h2>
+        <p class="meta">Examen final · Estrategia de pruebas &middot; 188 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Dashboard con datos reales del build #65 y la evolución del p95 por build de <code>main</code></p>
+    <a href="35-dashboard-calidad.png" target="_blank" rel="noopener">
+      <img src="35-dashboard-calidad.png" alt="35-dashboard-calidad.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">16</span>
+      <div class="titulo">
+        <h2>36-portal-web-local.png</h2>
+        <p class="meta">Examen final · Aplicación &middot; 17 KB</p>
+      </div>
+    </header>
+    <p class="demuestra"><strong>Demuestra:</strong> Portal de Clientes ejecutándose en local: ingreso exitoso y versión en el pie de página</p>
+    <a href="36-portal-web-local.png" target="_blank" rel="noopener">
+      <img src="36-portal-web-local.png" alt="36-portal-web-local.png" loading="lazy">
+    </a>
+  </section>
+
+  <section class="ficha">
+    <header>
+      <span class="n">17</span>
+      <div class="titulo">
         <h2>01-mvn-test-local.png</h2>
-        <p class="meta">Fig. 2 del informe &middot; 106 KB</p>
+        <p class="meta">Taller 1 · Fig. 2 &middot; 106 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Ejecución local de <code>mvn clean test</code>: las cuatro suites de Calculadora, <b>Tests run: 28</b> y <b>BUILD SUCCESS</b></p>
@@ -62,10 +286,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">2</span>
+      <span class="n">18</span>
       <div class="titulo">
         <h2>02-mvn-verify-bdd.png</h2>
-        <p class="meta">Fig. 7 del informe &middot; 128 KB</p>
+        <p class="meta">Taller 1 · Fig. 7 &middot; 128 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Los ocho escenarios BDD en español con sus acentos correctos, <b>Tests run: 8</b> y <b>BUILD SUCCESS</b></p>
@@ -76,10 +300,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">3</span>
+      <span class="n">19</span>
       <div class="titulo">
         <h2>02b-escenarios-bdd-smoke.png</h2>
-        <p class="meta">Fig. 8 del informe &middot; 128 KB</p>
+        <p class="meta">Taller 1 · Fig. 8 &middot; 128 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Ejecución selectiva con el filtro <code>@smoke</code>: <b>Skipped: 7</b>, es decir un solo escenario ejecutado</p>
@@ -90,10 +314,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">4</span>
+      <span class="n">20</span>
       <div class="titulo">
         <h2>03-reporte-bdd-cucumber.png</h2>
-        <p class="meta">Fig. 11 del informe &middot; 241 KB</p>
+        <p class="meta">Taller 1 · Fig. 11 &middot; 241 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Reporte de Cucumber: <b>8 PASSED</b>, con los escenarios expandidos y la tabla de Ejemplos del Esquema del escenario</p>
@@ -104,10 +328,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">5</span>
+      <span class="n">21</span>
       <div class="titulo">
         <h2>04-reporte-surefire.png</h2>
-        <p class="meta">Fig. 5 del informe &middot; 191 KB</p>
+        <p class="meta">Taller 1 · Fig. 5 &middot; 191 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Reporte de Surefire con las <b>28</b> pruebas unitarias, 0 errores y 100 % de éxito</p>
@@ -118,10 +342,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">6</span>
+      <span class="n">22</span>
       <div class="titulo">
         <h2>05-reporte-performance-k6.png</h2>
-        <p class="meta">Fig. 13 del informe &middot; 72 KB</p>
+        <p class="meta">Taller 1 · Fig. 13 &middot; 72 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Reporte de k6 con estado <b>APROBADA</b> y cada indicador contrastado con su umbral</p>
@@ -132,10 +356,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">7</span>
+      <span class="n">23</span>
       <div class="titulo">
         <h2>07-git-log-ramas.png</h2>
-        <p class="meta">Fig. 1 del informe &middot; 128 KB</p>
+        <p class="meta">Taller 1 · Fig. 1 &middot; 128 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Ramas locales y remotas, y el árbol de commits con los merges <b>PR #3 a #7</b></p>
@@ -146,10 +370,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">8</span>
+      <span class="n">24</span>
       <div class="titulo">
         <h2>08-estructura-proyecto.png</h2>
-        <p class="meta">Fig. 3 del informe &middot; 80 KB</p>
+        <p class="meta">Taller 1 · Fig. 3 &middot; 80 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Estructura del proyecto versionado, sin <code>target/</code> ni <code>.git/</code></p>
@@ -160,10 +384,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">9</span>
+      <span class="n">25</span>
       <div class="titulo">
         <h2>09-k6-consola.png</h2>
-        <p class="meta">Fig. 12 del informe &middot; 80 KB</p>
+        <p class="meta">Taller 1 · Fig. 12 &middot; 80 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Prueba de carga: <b>APROBADA</b>, 328 peticiones, <b>5,91 TPS</b>, p95 <b>93,90 ms</b> y 0 % de error</p>
@@ -174,10 +398,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">10</span>
+      <span class="n">26</span>
       <div class="titulo">
         <h2>11-reporte-failsafe.png</h2>
-        <p class="meta">Fig. 6 del informe &middot; 115 KB</p>
+        <p class="meta">Taller 1 · Fig. 6 &middot; 115 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Reporte de Failsafe con los <b>8</b> escenarios de la suite de aceptación</p>
@@ -188,10 +412,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">11</span>
+      <span class="n">27</span>
       <div class="titulo">
         <h2>12-completo-github-actions.jpeg</h2>
-        <p class="meta">— del informe &middot; 1628 KB</p>
+        <p class="meta">Taller 1 &middot; 1628 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Página completa del run, de la que se recortan las figuras 9, 10 y 16</p>
@@ -202,10 +426,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">12</span>
+      <span class="n">28</span>
       <div class="titulo">
         <h2>12-github-actions-pipeline.png</h2>
-        <p class="meta">Fig. 9 del informe &middot; 629 KB</p>
+        <p class="meta">Taller 1 · Fig. 9 &middot; 629 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Pipeline en GitHub Actions: las <b>cinco etapas en verde</b> y el detalle de las pruebas unitarias</p>
@@ -216,10 +440,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">13</span>
+      <span class="n">29</span>
       <div class="titulo">
         <h2>13-github-actions-metricas.png</h2>
-        <p class="meta">Fig. 10 del informe &middot; 469 KB</p>
+        <p class="meta">Taller 1 · Fig. 10 &middot; 469 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Métricas publicadas por el run: escenarios BDD, <b>cobertura JaCoCo</b> y los seis indicadores de performance</p>
@@ -230,10 +454,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">14</span>
+      <span class="n">30</span>
       <div class="titulo">
         <h2>14-completo-dashboard.jpeg</h2>
-        <p class="meta">— del informe &middot; 547 KB</p>
+        <p class="meta">Taller 1 &middot; 547 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Página completa del dashboard, de la que se recortan las figuras 14 y 15</p>
@@ -244,10 +468,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">15</span>
+      <span class="n">31</span>
       <div class="titulo">
         <h2>14-dashboard-publicado.png</h2>
-        <p class="meta">Fig. 14 del informe &middot; 294 KB</p>
+        <p class="meta">Taller 1 · Fig. 14 &middot; 294 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Dashboard en GitHub Pages: <b>28/28</b> unitarias, <b>8/8</b> BDD, <b>cobertura 99,1 %</b>, p95 <b>94 ms</b> y <b>5,91 TPS</b></p>
@@ -258,10 +482,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">16</span>
+      <span class="n">32</span>
       <div class="titulo">
         <h2>14b-dashboard-datos.png</h2>
-        <p class="meta">Fig. 15 del informe &middot; 300 KB</p>
+        <p class="meta">Taller 1 · Fig. 15 &middot; 300 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Evolución del percentil 95 por build, la vista de datos en tabla y los enlaces a los reportes navegables</p>
@@ -272,10 +496,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">17</span>
+      <span class="n">33</span>
       <div class="titulo">
         <h2>15-github-actions-artefactos.png</h2>
-        <p class="meta">Fig. 16 del informe &middot; 477 KB</p>
+        <p class="meta">Taller 1 · Fig. 16 &middot; 477 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Etapa <b>5 · Alertas automáticas</b> y los cuatro artefactos publicados por el pipeline</p>
@@ -286,10 +510,10 @@
 
   <section class="ficha">
     <header>
-      <span class="n">18</span>
+      <span class="n">34</span>
       <div class="titulo">
         <h2>16-reporte-cobertura.png</h2>
-        <p class="meta">Fig. 4 del informe &middot; 85 KB</p>
+        <p class="meta">Taller 1 · Fig. 4 &middot; 85 KB</p>
       </div>
     </header>
     <p class="demuestra"><strong>Demuestra:</strong> Reporte de JaCoCo con el detalle por clase: <b>Calculadora al 100 %</b> tras cubrir los métodos que faltaban</p>
@@ -298,5 +522,5 @@
     </a>
   </section>
 </main>
-<footer>Taller 1 &middot; Evaluación Unidad II &middot; Willians Melgar</footer>
+<footer>Examen Final y Taller 1 &middot; Automatización de Pruebas &middot; Willians Melgar</footer>
 </body></html>

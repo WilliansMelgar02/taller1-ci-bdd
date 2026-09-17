@@ -1,0 +1,13 @@
+{
+  "pipeline": "Deployment Pipeline - Blue-Green",
+  "ejecucion": "35171569525",
+  "evento": "pull_request",
+  "rama": "demo/rollback-defecto-interfaz",
+  "commit": "a351700a76fe0ffa94e8f180da1f74b6aee35a8b",
+  "actor": "WilliansMelgar02",
+  "imagen": "ghcr.io/williansmelgar02/portal-clientes:1.1.0-a351700",
+  "resultado": "failure",
+  "rollback": "ejecutado",
+  "color_activo_final": "blue",
+  "fecha": "2026-09-17T01:44:18Z"
+}

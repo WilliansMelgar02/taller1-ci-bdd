@@ -1,0 +1,13 @@
+{
+  "pipeline": "Deployment Pipeline - Blue-Green",
+  "ejecucion": "35172696225",
+  "evento": "workflow_run",
+  "rama": "main",
+  "commit": "43781341418e415c3bf50301460182738cab89e7",
+  "actor": "WilliansMelgar02",
+  "imagen": "ghcr.io/williansmelgar02/portal-clientes:1.1.0-4378134",
+  "resultado": "success",
+  "rollback": "no-ejecutado",
+  "color_activo_final": "green",
+  "fecha": "2026-09-17T02:01:30Z"
+}
