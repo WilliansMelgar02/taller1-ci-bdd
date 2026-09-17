@@ -196,4 +196,4 @@ Y el mensaje de recuperación (alerta A9) tras corregir:
 
 - Alertas implementadas en el pipeline: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml), job `alertas`
 - Alertas on-premise: [`Jenkinsfile`](../Jenkinsfile), bloque `post`
-- Captura de la simulación: `docs/evidencias/07-alerta-simulada.png`
+- Ejemplo del mensaje de alerta: [sección 4](#4-simulación-cómo-se-ve-una-alerta-real) de este documento
