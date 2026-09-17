@@ -10,7 +10,7 @@
 #    │  jar + imagen│   │  estable→BLUE · candidata→GREEN · health     │   │ estable  │
 #    │  versionada  │   │  Acceptance Gate (Selenium+API) contra GREEN │   │ + release│
 #    └──────────────┘   │  switch de tráfico · smoke test por el proxy │   └──────────┘
-#                       │  ✖ cualquier fallo ──► infra/rollback.sh     │
+#                       │  si algo falla ──► infra/rollback.sh         │
 #                       └──────────────────────────────────────────────┘
 #
 #  Disparadores:
@@ -209,7 +209,7 @@ jobs:
       # ---- post.failure: el equivalente al bloque 'post { failure }' de Jenkins.
       # Solo corre si la candidata llegó a desplegarse; un fallo anterior (por
       # ejemplo, al aprovisionar) no tiene nada que revertir.
-      - name: 🚨 Rollback automático a la versión estable
+      - name: Rollback automático a la versión estable
         if: failure() && steps.candidata.outcome != 'skipped'
         run: ./infra/rollback.sh
 
@@ -328,7 +328,7 @@ jobs:
       - name: Resumen de la promoción
         run: |
           {
-            echo "## ✅ Versión promovida"
+            echo "## Versión promovida"
             echo "| Etiqueta | Imagen |"
             echo "|---|---|"
             echo "| estable | \`${IMAGEN_APROBADA}\` |"

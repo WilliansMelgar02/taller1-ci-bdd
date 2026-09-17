@@ -298,7 +298,7 @@ jobs:
               const d = require("./performance/resultados/indicadores.json");
               const n = (x, k = 2) => Number(x).toFixed(k);
               const fila = (m, v, u, ok) =>
-                `| ${m} | ${v} | ${u} | ${ok ? "✅ CUMPLE" : "❌ NO CUMPLE"} |`;
+                `| ${m} | ${v} | ${u} | ${ok ? "CUMPLE" : "NO CUMPLE"} |`;
               console.log("| Indicador | Valor | Umbral | Resultado |");
               console.log("|---|---|---|---|");
               console.log(fila("Throughput (TPS)", n(d.tps) + " req/s", "> 5", d.tps > 5));
@@ -436,7 +436,7 @@ jobs:
           fi
           curl -sf -X POST -H 'Content-type: application/json' "$SLACK_WEBHOOK_URL" -d @- <<JSON
           {
-            "text": ":rotating_light: *Pipeline FALLIDO* en \`${{ github.ref_name }}\`",
+            "text": "*[FALLO] Pipeline fallido* en \`${{ github.ref_name }}\`",
             "blocks": [
               { "type": "section", "text": { "type": "mrkdwn",
                 "text": "*Repositorio:* ${{ github.repository }}\n*Autor:* ${{ github.actor }}\n*Commit:* \`${{ github.sha }}\`" } },
@@ -478,10 +478,10 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.estado.outputs.global }}" = "success" ]; then
-            echo "## ✅ Pipeline en verde" >> $GITHUB_STEP_SUMMARY
+            echo "## Pipeline en verde" >> $GITHUB_STEP_SUMMARY
             echo "Unitarias, integración, escenarios BDD y prueba de performance cumplieron todos sus umbrales." >> $GITHUB_STEP_SUMMARY
           else
-            echo "## 🚨 Pipeline fallido — alerta emitida" >> $GITHUB_STEP_SUMMARY
+            echo "## Pipeline fallido: alerta emitida" >> $GITHUB_STEP_SUMMARY
             echo "| Etapa | Resultado |" >> $GITHUB_STEP_SUMMARY
             echo "|---|---|" >> $GITHUB_STEP_SUMMARY
             echo "| Pruebas unitarias | ${{ steps.estado.outputs.unit }} |" >> $GITHUB_STEP_SUMMARY
