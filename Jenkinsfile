@@ -1,16 +1,29 @@
 // =============================================================================
-//  Jenkinsfile — alternativa on-premise al pipeline de GitHub Actions.
+//  Jenkinsfile — Integración continua + Deployment pipeline Blue-Green
 //
-//  Se incluye para demostrar que la estrategia de CI es independiente de la
-//  herramienta: las mismas etapas (compilar → unitarias → BDD → performance →
-//  reportes → alertas) se expresan en Jenkins con Declarative Pipeline.
+//  Equivalente on-premise de .github/workflows/ci.yml y despliegue.yml. Las
+//  acciones de despliegue viven en infra/*.sh, de modo que Jenkins y GitHub
+//  Actions ejecutan exactamente los mismos pasos: la estrategia no depende de
+//  la herramienta de CI.
 //
-//  Plugins requeridos: Pipeline, JUnit, HTML Publisher, Performance,
-//  Warnings NG (opcional) y Mailer / Slack Notification.
+//    Commit stage ........ Checkout → Compilar → Unitarias → Integración + BDD → Performance
+//    Deployment pipeline . Empaquetar imagen → Deploy to Staging (Blue-Green)
+//                          → Acceptance Gate → Cambiar tráfico → Promover
+//    post { failure } .... infra/rollback.sh
+//
+//  Flujo de ramas Trunk-Based: el commit stage corre en toda rama y Pull
+//  Request; el despliegue en staging, en main y en los PR hacia main; la
+//  promoción a estable, solo en main.
+//
+//  Agente (label 'docker'): JDK 17, Maven 3.9, Docker, Google Chrome, Node.js y k6.
+//  Plugins: Pipeline, Git, JUnit, HTML Publisher, Credentials Binding, Workspace
+//  Cleanup y Slack Notification.
+//  Credencial 'ghcr' (usuario + token con permiso write:packages).
 // =============================================================================
 pipeline {
 
-    agent any
+    // Agente con Docker: los ambientes de prueba se crean y destruyen en cada ejecución.
+    agent { label 'docker' }
 
     tools {
         jdk   'jdk-17'          // configurados en "Manage Jenkins → Tools"
@@ -18,9 +31,10 @@ pipeline {
     }
 
     options {
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 45, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '30'))
         timestamps()
+        // Un solo despliegue a la vez: dos ejecuciones compartirían los puertos de staging.
         disableConcurrentBuilds()
     }
 
@@ -31,8 +45,9 @@ pipeline {
     }
 
     environment {
-        UMBRAL_P95_MS      = '800'    // latencia p95 máxima aceptada
-        UMBRAL_ERRORES_PCT = '1'      // tasa de error máxima aceptada
+        REGISTRO           = 'ghcr.io'
+        REPOSITORIO_IMAGEN = 'ghcr.io/williansmelgar02/portal-clientes'
+        DIRECTORIO_ESTADO  = "${WORKSPACE}/.staging"
     }
 
     stages {
@@ -40,10 +55,20 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                echo "Construyendo la rama ${env.BRANCH_NAME} — commit ${env.GIT_COMMIT}"
+                script {
+                    def commitCorto = sh(returnStdout: true, script: 'git rev-parse --short=7 HEAD').trim()
+                    env.VERSION_BASE = sh(returnStdout: true,
+                            script: 'mvn -B -ntp -q help:evaluate -Dexpression=project.version -DforceStdout').trim()
+                    env.VERSION = "${env.VERSION_BASE}-${commitCorto}"
+                    env.IMAGEN = "${env.REPOSITORIO_IMAGEN}:${env.VERSION}"
+                }
+                echo "Rama ${env.BRANCH_NAME} — versión ${env.VERSION}"
             }
         }
 
+        // =====================================================================
+        //  COMMIT STAGE: feedback rápido, de la etapa más barata a la más cara.
+        // =====================================================================
         stage('Compilar') {
             steps {
                 sh 'mvn -B -ntp clean compile'
@@ -56,66 +81,164 @@ pipeline {
             }
             post {
                 always {
-                    // Publica los resultados y marca el build UNSTABLE si hay fallos.
-                    junit testResults: 'target/surefire-reports/TEST-*.xml',
-                          allowEmptyResults: false
+                    junit testResults: 'target/surefire-reports/TEST-*.xml', allowEmptyResults: false
                 }
             }
         }
 
-        stage('Escenarios BDD') {
+        stage('Integración y escenarios BDD') {
             steps {
-                sh 'mvn -B -ntp verify -DskipUnitTests=true'
+                // Vuelve a pasar por las unitarias para que JaCoCo mida la cobertura combinada.
+                sh 'mvn -B -ntp verify'
             }
             post {
                 always {
-                    junit testResults: 'target/cucumber-reports/cucumber-junit.xml',
-                          allowEmptyResults: false
+                    junit testResults: 'target/failsafe-reports/TEST-*.xml', allowEmptyResults: false
+                    publishHTML(target: [
+                        reportDir            : 'target/cucumber-reports',
+                        reportFiles          : 'reporte-bdd.html',
+                        reportName           : 'Escenarios BDD (Cucumber)',
+                        keepAll              : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing         : true
+                    ])
+                    publishHTML(target: [
+                        reportDir            : 'target/site/jacoco',
+                        reportFiles          : 'index.html',
+                        reportName           : 'Cobertura (JaCoCo)',
+                        keepAll              : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing         : true
+                    ])
                 }
             }
         }
 
         stage('Prueba de performance') {
             steps {
-                sh 'node performance/servidor-mock.js & sleep 3'
-                sh 'k6 run --summary-export=performance/resultados/resumen-k6.json performance/login-carga.js'
+                // Servidor y prueba en el MISMO 'sh': Jenkins termina los procesos
+                // en segundo plano al finalizar cada paso.
+                sh '''
+                    mkdir -p performance/resultados
+                    node performance/servidor-mock.js &
+                    SERVIDOR=$!
+                    trap 'kill $SERVIDOR' EXIT
+                    for i in $(seq 1 20); do
+                      curl -sf http://localhost:8088/health > /dev/null && break
+                      sleep 1
+                    done
+                    k6 run performance/login-carga.js
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'performance/resultados/**', allowEmptyArchive: true
+                }
             }
         }
 
-        stage('Publicar reportes navegables') {
+        // =====================================================================
+        //  DEPLOYMENT PIPELINE
+        // =====================================================================
+        stage('Empaquetar imagen') {
+            when {
+                anyOf { branch 'main'; changeRequest target: 'main' }
+            }
             steps {
-                sh 'mvn -B -ntp site -DskipTests'
-                publishHTML(target: [
-                    reportDir            : 'target/cucumber-reports',
-                    reportFiles          : 'reporte-bdd.html',
-                    reportName           : 'Reporte BDD (Cucumber)',
-                    keepAll              : true,
-                    alwaysLinkToLastBuild: true,
-                    allowMissing         : false
-                ])
-                publishHTML(target: [
-                    reportDir            : 'target/site',
-                    reportFiles          : 'surefire.html,failsafe.html',
-                    reportName           : 'Reporte de pruebas (Maven Site)',
-                    keepAll              : true,
-                    alwaysLinkToLastBuild: true,
-                    allowMissing         : true
-                ])
-                archiveArtifacts artifacts: 'target/cucumber-reports/**, performance/resultados/**',
-                                 fingerprint: true
+                // Las pruebas ya corrieron en el commit stage de esta misma ejecución.
+                sh 'mvn -B -ntp package -DskipTests'
+                withCredentials([usernamePassword(credentialsId: 'ghcr',
+                        usernameVariable: 'USUARIO_REGISTRO', passwordVariable: 'TOKEN_REGISTRO')]) {
+                    sh 'echo "$TOKEN_REGISTRO" | docker login "$REGISTRO" -u "$USUARIO_REGISTRO" --password-stdin'
+                }
+                sh '''
+                    docker build \
+                      --build-arg VERSION="$VERSION" \
+                      --build-arg COMMIT_SHA="$(git rev-parse HEAD)" \
+                      --build-arg FECHA_BUILD="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                      --tag "$IMAGEN" .
+                    docker push "$IMAGEN"
+                '''
+            }
+        }
+
+        stage('Deploy to Staging (Blue-Green)') {
+            when {
+                anyOf { branch 'main'; changeRequest target: 'main' }
+            }
+            steps {
+                sh './infra/preparar-ambiente.sh'
+                sh '''
+                    if docker pull --quiet "$REPOSITORIO_IMAGEN:estable" > /dev/null 2>&1; then
+                      ./infra/desplegar-estable.sh "$REPOSITORIO_IMAGEN:estable"
+                    else
+                      echo "Primera entrega: aún no existe una versión estable"
+                    fi
+                '''
+                // Se marca ANTES de desplegar: si el arranque de GREEN falla, también hay que revertir.
+                script { env.CANDIDATA_DESPLEGADA = 'true' }
+                sh './infra/desplegar-candidata.sh "$IMAGEN"'
+            }
+        }
+
+        stage('Acceptance Gate') {
+            when {
+                anyOf { branch 'main'; changeRequest target: 'main' }
+            }
+            steps {
+                sh 'mvn -B -ntp verify -Paceptacion -Durl.base=http://localhost:8082 -Dversion.esperada="$VERSION"'
+            }
+            post {
+                always {
+                    junit testResults: 'target/aceptacion-reports/aceptacion-junit.xml', allowEmptyResults: true
+                    publishHTML(target: [
+                        reportDir            : 'target/aceptacion-reports',
+                        reportFiles          : 'reporte-aceptacion.html',
+                        reportName           : 'Acceptance Gate (Selenium + API)',
+                        keepAll              : true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing         : true
+                    ])
+                }
+            }
+        }
+
+        stage('Cambiar tráfico a GREEN') {
+            when {
+                anyOf { branch 'main'; changeRequest target: 'main' }
+            }
+            steps {
+                sh './infra/cambiar-trafico.sh green'
+                sh './infra/verificar-salud.sh http://localhost:8080 "$VERSION"'
+            }
+        }
+
+        stage('Promover versión estable') {
+            when { branch 'main' }
+            steps {
+                sh '''
+                    for etiqueta in estable "$VERSION_BASE"; do
+                      docker tag "$IMAGEN" "$REPOSITORIO_IMAGEN:$etiqueta"
+                      docker push "$REPOSITORIO_IMAGEN:$etiqueta"
+                    done
+                '''
             }
         }
     }
 
     // =========================================================================
-    //  Alertas automáticas: el pipeline avisa, nadie tiene que ir a mirarlo.
+    //  Jenkins evalúa las condiciones de 'post' en orden fijo:
+    //  always → fixed → failure → unstable → cleanup. Por eso el ambiente se
+    //  destruye en 'cleanup' y no en 'always': el rollback de 'failure' lo necesita.
     // =========================================================================
     post {
         failure {
-            mail to: 'equipo-qa@empresa.cl',
-                 subject: "[CI] FALLO en ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: """El pipeline falló en la rama ${env.BRANCH_NAME}.
-                          Revisar: ${env.BUILD_URL}console"""
+            script {
+                if (env.CANDIDATA_DESPLEGADA == 'true') {
+                    echo 'Despliegue fallido: iniciando rollback automático...'
+                    sh './infra/rollback.sh'
+                }
+            }
             slackSend channel: '#alertas-qa',
                       color: 'danger',
                       message: ":rotating_light: Build #${env.BUILD_NUMBER} FALLÓ en ${env.BRANCH_NAME} — ${env.BUILD_URL}"
@@ -130,7 +253,14 @@ pipeline {
                       color: 'good',
                       message: ":white_check_mark: Build #${env.BUILD_NUMBER} recuperado en ${env.BRANCH_NAME}"
         }
-        always {
+        cleanup {
+            script {
+                if (fileExists('.staging')) {
+                    sh './infra/estado-ambiente.sh || true'
+                    archiveArtifacts artifacts: '.staging/**, target/aceptacion-reports/**', allowEmptyArchive: true
+                    sh './infra/destruir-ambiente.sh'
+                }
+            }
             cleanWs()
         }
     }
