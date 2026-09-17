@@ -1,683 +1,528 @@
-# Taller 1 · Evaluación Unidad N°II — Integración Continua, BDD y Performance
+# Portal de Clientes · Integración continua y deployment pipeline
 
 [![CI - Pruebas Automatizadas](https://github.com/WilliansMelgar02/taller1-ci-bdd/actions/workflows/ci.yml/badge.svg)](https://github.com/WilliansMelgar02/taller1-ci-bdd/actions/workflows/ci.yml)
+[![Deployment Pipeline - Blue-Green](https://github.com/WilliansMelgar02/taller1-ci-bdd/actions/workflows/despliegue.yml/badge.svg)](https://github.com/WilliansMelgar02/taller1-ci-bdd/actions/workflows/despliegue.yml)
 
 **Autor:** Willians Eduardo Melgar Cherres
-**Asignatura:** Automatización de Pruebas — Unidad II
+**Asignatura:** Automatización de Pruebas · Examen Final (Unidades I, II y III)
 **Repositorio:** <https://github.com/WilliansMelgar02/taller1-ci-bdd>
-**Dashboard publicado:** <https://williansmelgar02.github.io/taller1-ci-bdd/>
+**Dashboard de calidad:** <https://williansmelgar02.github.io/taller1-ci-bdd/>
 
 ---
 
 ## Índice
 
-1. [Objetivo](#1-objetivo)
-2. [Stack tecnológico y por qué](#2-stack-tecnológico-y-por-qué)
-3. [Estructura del proyecto](#3-estructura-del-proyecto)
-4. [Puesta en marcha y comandos](#4-puesta-en-marcha-y-comandos)
-5. [Actividad 1 — Integración continua](#5-actividad-1--integración-continua)
-6. [Actividad 2 — BDD, performance y observabilidad](#6-actividad-2--bdd-performance-y-observabilidad)
-7. [El pipeline explicado etapa por etapa](#7-el-pipeline-explicado-etapa-por-etapa)
-8. [Reportes navegables](#8-reportes-navegables)
-9. [Resultados obtenidos](#9-resultados-obtenidos)
-10. [Evidencias](#10-evidencias)
+1. [Descripción del proyecto](#1-descripción-del-proyecto)
+2. [Cómo se cumple cada actividad](#2-cómo-se-cumple-cada-actividad)
+3. [Stack tecnológico](#3-stack-tecnológico)
+4. [Estructura del proyecto](#4-estructura-del-proyecto)
+5. [Actividad 1: repositorio Git y proyecto Maven](#5-actividad-1-repositorio-git-y-proyecto-maven)
+6. [Estrategia de pruebas](#6-estrategia-de-pruebas)
+7. [Actividad 2: pipeline de integración continua](#7-actividad-2-pipeline-de-integración-continua)
+8. [Actividad 3: deployment pipeline con Blue-Green y rollback](#8-actividad-3-deployment-pipeline-con-blue-green-y-rollback)
+9. [Cómo ejecutar las pruebas y los pipelines](#9-cómo-ejecutar-las-pruebas-y-los-pipelines)
+10. [Resultados obtenidos](#10-resultados-obtenidos)
+11. [Evidencias](#11-evidencias)
+12. [Relación con el material del curso](#12-relación-con-el-material-del-curso)
 
 ---
 
-## 1. Objetivo
+## 1. Descripción del proyecto
 
-Profesionalizar el proceso de pruebas automatizadas de un proyecto Java
-demostrando, sobre un caso real y ejecutable:
+El **Portal de Clientes** es una aplicación Java con una API HTTP de inicio de
+sesión y una interfaz web. Sobre ella se construyó un proceso completo de
+calidad y entrega:
 
-- gestión de versiones con **Git** (ramas, commits atómicos, merges revisados);
-- gestión de dependencias y ciclo de build con **Maven**;
-- pruebas unitarias **atómicas e independientes** con **JUnit 5**;
-- especificación por ejemplos (**BDD**) con **Gherkin + Cucumber**, nacida de una
-  sesión **Three Amigos**;
-- un **pipeline de CI** que compila, prueba y publica reportes en cada `push` y
-  cada *Pull Request*;
-- una **prueba de performance** con **k6** cuyos umbrales actúan como *quality gate*;
-- **métricas, dashboard y alertas automáticas** que hacen visible la calidad.
+- un **pipeline de integración continua** que compila, analiza el código y
+  ejecuta pruebas unitarias, de integración, BDD y de performance en cada push y
+  cada Pull Request;
+- un **deployment pipeline** que empaqueta la aplicación como imagen Docker, la
+  despliega en un ambiente de pruebas con la estrategia **Blue-Green**, ejecuta
+  **pruebas de aceptación con Selenium** contra la versión desplegada y, si algo
+  falla, hace **rollback automático** a la versión estable.
 
-El proyecto no es un ejemplo de papel: **todo lo que se documenta aquí se ejecutó
-realmente**, y las cifras que aparecen provienen de esas ejecuciones.
+### Reglas de negocio del login
 
----
+Acordadas en la sesión Three Amigos ([`docs/01-sesion-three-amigos.md`](docs/01-sesion-three-amigos.md)):
 
-## 2. Stack tecnológico y por qué
-
-| Herramienta | Versión | Por qué se eligió |
+| Regla | Comportamiento | Respuesta de la API |
 |---|---|---|
-| **Java** | 17 (LTS) | Versión con soporte extendido; `record` simplifica los objetos de valor |
-| **Maven** | 3.9.9 | Estándar del ecosistema Java; ciclo de vida claro y dependencias declarativas |
-| **JUnit 5 (Jupiter)** | 5.11.4 | `@DisplayName` documenta la intención; `@ParameterizedTest` evita duplicar pruebas |
-| **Cucumber** | 7.20.1 | Traduce los ejemplos de la sesión Three Amigos a pruebas ejecutables sin perder el lenguaje de negocio |
-| **Surefire / Failsafe** | 3.5.2 | Separan pruebas unitarias de pruebas de aceptación: distinto costo, distinta etapa |
-| **JaCoCo** | 0.8.12 | Mide qué código ejercitan realmente las pruebas; su umbral también rompe el build |
-| **k6** | 0.55.0 | Prueba de carga *como código*, versionable y con umbrales que rompen el build |
-| **GitHub Actions** | — | Pipeline as Code, integrado al repositorio y a los Pull Requests |
-| **Jenkins** | (declarativo) | Se incluye el `Jenkinsfile` equivalente para demostrar que la estrategia no depende de la herramienta |
+| RN-01 | Acceso solo con usuario y contraseña coincidentes | `200` |
+| RN-02 | La contraseña distingue mayúsculas de minúsculas | `401` |
+| RN-03 | Mensaje de error genérico, sin revelar qué dato falló | `401` |
+| RN-04 | La cuenta se bloquea tras 3 intentos fallidos consecutivos | `423` |
+| RN-05 | Un ingreso exitoso reinicia el contador de intentos | `200` |
+| RN-06 | Con campos vacíos se piden los datos y no se descuenta intento | `400` |
 
-> **Decisión clave: Surefire y Failsafe separados.** Las pruebas unitarias corren
-> en `mvn test` (décimas de segundo) y las de aceptación en `mvn verify`. Así el
-> pipeline **falla temprano y barato**: un error trivial no gasta minutos
-> ejecutando escenarios de negocio.
+### Endpoints
+
+| Ruta | Método | Descripción |
+|---|---|---|
+| `/` | GET | Interfaz web del portal |
+| `/api/login` | POST | Autenticación: `{"usuario": "...", "contrasena": "..."}` |
+| `/health` | GET | Estado, versión, commit y color Blue-Green del despliegue |
 
 ---
 
-## 3. Estructura del proyecto
+## 2. Cómo se cumple cada actividad
+
+| Actividad | Requisito del enunciado | Dónde está | Evidencia |
+|---|---|---|---|
+| **1** | Repositorio Git con flujo de ramas definido | Trunk-Based Development: [`docs/04-estrategia-de-ramas.md`](docs/04-estrategia-de-ramas.md) | [Figs. 20 y 21](#11-evidencias) |
+| **1** | Proyecto Maven con dependencias de pruebas | [`pom.xml`](pom.xml): JUnit 5, Cucumber, Selenium, JaCoCo, SpotBugs | [Fig. 22](#11-evidencias) |
+| **2** | Pipeline de CI con stages de build y pruebas | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) y [`Jenkinsfile`](Jenkinsfile) | [Figs. 23, 33 y 34](#11-evidencias) |
+| **2** | Al menos pruebas unitarias y de integración | 44 unitarias (Surefire) y 11 de integración sobre el servidor HTTP real (Failsafe), más 8 escenarios BDD | [Fig. 34](#11-evidencias) |
+| **3** | Deployment pipeline con acceptance tests y despliegue en ambiente de prueba | [`.github/workflows/despliegue.yml`](.github/workflows/despliegue.yml), [`Dockerfile`](Dockerfile), [`infra/`](infra/) | [Figs. 24 y 30](#11-evidencias) |
+| **3** | Rollback o despliegue Canary/Blue-Green | Blue-Green **y** rollback automático y manual: [`docs/05-pipeline-de-despliegue.md`](docs/05-pipeline-de-despliegue.md) | [Figs. 25 a 27, 31 y 32](#11-evidencias) |
+| Documentación | README con estrategia, ejecución y capturas | Este archivo | [Sección 11](#11-evidencias) |
+
+---
+
+## 3. Stack tecnológico
+
+| Herramienta | Versión | Rol |
+|---|---|---|
+| Java (Temurin) | 17 LTS | Lenguaje y plataforma |
+| Maven | 3.9.9 | Build, dependencias y ciclo de vida de pruebas |
+| JUnit 5 | 5.11.4 | Pruebas unitarias y de integración |
+| Cucumber | 7.20.1 | Escenarios BDD y pruebas de aceptación en Gherkin |
+| Selenium WebDriver | 4.49.0 | Pruebas de aceptación sobre la interfaz web |
+| Gson | 2.14.0 | Contrato JSON de la API |
+| JaCoCo | 0.8.12 | Cobertura con umbral que rompe el build |
+| SpotBugs + Find Security Bugs | 4.10.4 / 1.14.0 | Análisis estático (SAST) |
+| k6 | 0.55 (local) · 2.2 (CI) | Prueba de carga con umbrales de SLA |
+| Docker | `eclipse-temurin:17-jre-alpine` | Imagen de ejecución |
+| NGINX | 1.27 | Proxy del cambio de tráfico Blue-Green |
+| GitHub Actions | — | CI y deployment pipeline |
+| GitHub Container Registry | — | Registro de imágenes versionadas |
+| Jenkins (declarativo) | — | Pipeline equivalente on-premise |
+
+La API usa el servidor HTTP incluido en el JDK, no un framework: la aplicación
+expone tres rutas, arranca en milisegundos (lo que acorta el health check del
+despliegue) y la imagen queda liviana.
+
+---
+
+## 4. Estructura del proyecto
 
 ```
 taller1-ci-bdd/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                      Pipeline de CI (5 etapas)
-├── docs/
-│   ├── 01-sesion-three-amigos.md       Roles, reglas de negocio, criterios y ejemplos
-│   ├── 02-dashboard-metricas.md        Qué se mide y cómo llega al dashboard
-│   ├── 03-alertas-automaticas.md       Matriz de alertas, canales y escalamiento
-│   └── evidencias/                     Capturas y salidas de consola reales
-├── performance/
-│   ├── servidor-mock.js                Servicio de login bajo prueba (contrato real)
-│   ├── login-carga.js                  Prueba de carga k6 con umbrales de SLA
-│   └── resultados/                     Reportes generados (no versionado)
-├── reportes/
-│   └── index.html                      Dashboard de calidad publicado en GitHub Pages
-├── src/
-│   ├── main/java/cl/taller/qa/
-│   │   ├── Calculadora.java            Servicio aritmético sin estado
-│   │   ├── ServicioAutenticacion.java  Reglas de negocio del login (RN-01 a RN-06)
-│   │   └── ResultadoAutenticacion.java Objeto de valor inmutable
-│   └── test/
-│       ├── java/cl/taller/qa/
-│       │   ├── CalculadoraSumaTest.java    Pruebas unitarias de la suma
-│       │   ├── CalculadoraRestaTest.java   Pruebas unitarias de la resta
-│       │   └── bdd/
-│       │       ├── EjecutorEscenariosBddIT.java  Runner de Cucumber
-│       │       └── steps/PasosLogin.java         Step definitions
-│       └── resources/
-│           ├── features/login.feature            Escenarios en Gherkin (español)
-│           └── junit-platform.properties         Glue y reportes de Cucumber
-├── .gitignore
-├── Jenkinsfile                          Pipeline equivalente on-premise
-├── pom.xml                              Dependencias, plugins y reporting
-└── README.md
+├── .github/workflows/
+│   ├── ci.yml                        Pipeline de integración continua (Actividad 2)
+│   ├── despliegue.yml                Deployment pipeline Blue-Green (Actividad 3)
+│   └── rollback-manual.yml           Rollback manual asistido (Actividad 3)
+├── infra/                            Scripts de despliegue, compartidos por Actions y Jenkins
+│   ├── comun.sh                      Configuración del ambiente y funciones comunes
+│   ├── preparar-ambiente.sh          Red Docker y proxy NGINX
+│   ├── desplegar-estable.sh          Versión estable en BLUE
+│   ├── desplegar-candidata.sh        Versión candidata en GREEN
+│   ├── verificar-salud.sh            Health check con verificación de versión
+│   ├── cambiar-trafico.sh            Switch Blue-Green
+│   ├── rollback.sh                   Rollback automático verificado
+│   ├── publicar-imagen.sh            Publicación con reintentos
+│   ├── estado-ambiente.sh            Resumen del despliegue
+│   └── destruir-ambiente.sh          Limpieza del ambiente efímero
+├── src/main/java/cl/taller/qa/
+│   ├── Aplicacion.java               Punto de entrada (java -jar)
+│   ├── ServicioAutenticacion.java    Reglas de negocio RN-01 a RN-06
+│   ├── ResultadoAutenticacion.java   Resultado inmutable del login
+│   ├── EstadoAutenticacion.java      Desenlaces posibles del login
+│   ├── Calculadora.java              Servicio aritmético (Taller 1)
+│   └── web/                          API HTTP e interfaz web
+├── src/main/resources/web/           index.html, app.js, estilos.css
+├── src/test/java/cl/taller/qa/
+│   ├── Calculadora*Test.java         Unitarias (Taller 1)
+│   ├── web/*Test.java                Unitarias de configuración y API
+│   ├── integracion/ApiPortalIT.java  Integración: servidor HTTP real
+│   ├── bdd/                          Escenarios BDD sobre el dominio
+│   └── aceptacion/                   Aceptación: Selenium + API contra staging
+├── src/test/resources/
+│   ├── features/login.feature        Especificación BDD de negocio
+│   └── aceptacion/*.feature          Escenarios críticos del Acceptance Gate
+├── performance/login-carga.js        Prueba de carga k6
+├── reportes/index.html               Dashboard de calidad (GitHub Pages)
+├── docs/                             Documentación y evidencias
+├── Dockerfile · .dockerignore        Imagen de ejecución
+├── Jenkinsfile                       Pipeline equivalente on-premise
+└── pom.xml                           Dependencias, plugins y perfiles
 ```
-
-### Por qué esta estructura
-
-- **`src/main` y `src/test` separados** — es la convención de Maven; el código de
-  prueba nunca viaja al artefacto de producción.
-- **El paquete `bdd` aislado** — permite que Surefire lo excluya con una sola
-  regla y que Failsafe lo ejecute en otra etapa.
-- **`docs/` versionado junto al código** — la documentación evoluciona con el
-  proyecto y se revisa en el mismo Pull Request. Documentación que vive en otro
-  lado, muere en otro lado.
-- **`performance/` fuera de `src`** — no es código Java, no se compila; es un
-  activo de prueba independiente del lenguaje de la aplicación.
 
 ---
 
-## 4. Puesta en marcha y comandos
+## 5. Actividad 1: repositorio Git y proyecto Maven
 
-### Requisitos
+### 5.1 Flujo de ramas: Trunk-Based Development
 
-- JDK 17 · Maven 3.9+ · Node.js 18+ (para el servidor bajo prueba) · k6 0.5+ (opcional, para la prueba de carga)
+Detalle completo en [`docs/04-estrategia-de-ramas.md`](docs/04-estrategia-de-ramas.md).
 
-### Primer arranque tras clonar el repositorio
+Se eligió Trunk-Based y no GitFlow siguiendo el criterio del curso: GitFlow "es
+útil en equipos grandes donde hay ciclos largos y versiones estables
+planificadas", mientras que Trunk-Based es "ideal para equipos ágiles y
+despliegues continuos" (ME_1, p. 8). Este proyecto se desarrolla de forma
+individual y **cada merge a `main` se despliega y se promueve**.
 
-```powershell
-git clone https://github.com/WilliansMelgar02/taller1-ci-bdd
-cd taller1-ci-bdd
-
-# Windows bloquea la ejecucion de scripts por defecto. Este ambito afecta
-# solo a la ventana actual: no modifica la configuracion del sistema.
-Set-ExecutionPolicy -Scope Process Bypass -Force
-
-. .preparar-entorno.ps1     # expone Maven y k6, y fija la consola en UTF-8
-mvn verify                   # 14 pruebas unitarias + 8 escenarios BDD
-```
-
-> Si se omite `Set-ExecutionPolicy`, PowerShell responde *"la ejecución de scripts
-> está deshabilitada en este sistema"*. Es la configuración por defecto de Windows,
-> no un problema del proyecto.
->
-> En Linux o macOS no hace falta ese paso: basta con tener `mvn` en el PATH y
-> ejecutar `mvn verify` directamente. El pipeline lo corre así en ubuntu-latest.
-
-### Comandos usados en el proyecto
-
-```bash
-# --- Compilación y pruebas ------------------------------------------------
-mvn clean compile                    # compila el código fuente
-mvn test                             # SOLO pruebas unitarias (rápido, fail-fast)
-mvn verify                           # unitarias + escenarios BDD
-mvn verify -DskipUnitTests=true      # solo BDD (lo que hace el pipeline en la etapa 2)
-mvn site                             # genera los reportes HTML navegables
-
-# --- Prueba de performance ------------------------------------------------
-node performance/servidor-mock.js &  # levanta el servicio bajo prueba (puerto 8088)
-k6 run performance/login-carga.js    # ejecuta la carga y evalúa los umbrales
-
-# --- Gestión de versiones -------------------------------------------------
-git checkout -b feature/nombre       # rama por funcionalidad
-git commit -m "tipo(alcance): ..."   # commits atómicos con Conventional Commits
-git merge --no-ff feature/nombre     # merge que preserva la historia de la rama
-git log --graph --oneline --all      # visualiza el árbol de ramas
-```
-
-### Scripts de apoyo
-
-El repositorio incluye seis scripts que automatizan tareas repetitivas del
-desarrollo y de la elaboración del informe. Ninguno es necesario para que el
-proyecto compile o pase las pruebas: `mvn verify` funciona por sí solo.
-
-| Script | Para qué sirve |
+| Regla | Aplicación |
 |---|---|
-| `preparar-entorno.ps1` | Expone Maven y k6 en la sesión de PowerShell y fija la consola en UTF-8, para que los acentos de los escenarios Gherkin se vean correctamente |
-| `correr-performance.ps1` | Ejecuta la prueba de carga de punta a punta: levanta el servicio, espera a que responda, corre k6 y lo detiene |
-| `generar-indice-evidencias.js` | Genera `docs/evidencias/index.html`, el índice navegable que muestra cada captura junto a lo que demuestra y la figura del informe en la que aparece |
-| `mostrar-estructura.ps1` | Muestra la estructura del proyecto partiendo de `git ls-files`, de modo que quedan fuera `target/`, `sitio/` y `.git/` sin necesidad de filtros |
-| `servidor-reportes.js` | Sirve en `localhost:8090` el mismo sitio que el pipeline publica en GitHub Pages, para revisarlo antes de hacer push |
-| `capturar.ps1` | Captura una ventana y la guarda en `docs/evidencias`; admite `-Ventana <título>` para fotografiar el navegador sin cambiar de ventana |
-| `guardar-captura.ps1` | Guarda en `docs/evidencias` la imagen que esté en el portapapeles |
+| `main` siempre desplegable | Todo merge pasa por CI y deployment pipeline |
+| Ramas de vida corta | De 1 a 4 commits: `feature/`, `fix/`, `chore/`, `style/`, `docs/`, `demo/` |
+| Integración solo por Pull Request | Con CI y Acceptance Gate en verde |
+| Merge commit por entrega | `merge: integra ... (PR #n)` |
+| Conventional Commits | `tipo(alcance): resumen` y cuerpo con el porqué |
+| Versionado | SemVer en el `pom.xml`, imagen por commit y release `v1.1.0` |
 
-Los dos últimos existen para producir las evidencias de este informe de forma
-reproducible y con nombres consistentes, no para el funcionamiento del proyecto.
+### 5.2 Proyecto Maven
 
-> **Nota sobre PowerShell.** Windows deshabilita la ejecución de scripts por
-> defecto. Antes de usarlos hay que ejecutar `Set-ExecutionPolicy -Scope Process
-> Bypass -Force`, que afecta únicamente a la ventana actual.
-
-### Archivos clave
-
-| Archivo | Qué resuelve |
+| Elemento del `pom.xml` | Para qué sirve |
 |---|---|
-| `pom.xml` | Dependencias, separación Surefire/Failsafe, reporting HTML |
-| `.gitignore` | Excluye artefactos regenerables, reportes, configuración de IDE y secretos |
-| `.github/workflows/ci.yml` | Las 5 etapas del pipeline |
-| `Jenkinsfile` | El mismo pipeline en Jenkins declarativo |
-| `src/test/resources/features/login.feature` | La especificación ejecutable del negocio |
-| `src/test/resources/junit-platform.properties` | Glue de Cucumber y formatos de reporte |
-| `performance/login-carga.js` | Perfil de carga y umbrales del SLA |
-| `reportes/index.html` | Dashboard de calidad |
+| BOM de JUnit y Cucumber | Versiones coherentes de cada familia de artefactos |
+| `maven-surefire-plugin` | Pruebas unitarias (`*Test.java`) en `mvn test` |
+| `maven-failsafe-plugin` | Integración y BDD (`*IT.java`) en `mvn verify`; excluye la suite de aceptación |
+| `jacoco-maven-plugin` | Cobertura combinada con umbral: 80 % de instrucciones, 70 % de ramas y 70 % por clase |
+| `spotbugs-maven-plugin` + Find Security Bugs | Análisis estático; un hallazgo medio o alto rompe el build |
+| `maven-jar-plugin` + `maven-shade-plugin` | Jar ejecutable autocontenido (`target/portal-clientes.jar`) con la versión en el MANIFEST |
+| Perfil `aceptacion` | Ejecuta solo las pruebas de aceptación contra una URL (`-Durl.base`) |
 
 ---
 
-## 5. Actividad 1 — Integración continua
+## 6. Estrategia de pruebas
 
-### 5.1 Repositorio Git: ramas y commits
-
-Se usó un flujo **feature branch + merge sin fast-forward**, que es el que
-reproduce un trabajo en equipo con Pull Requests:
-
-```
-main ──●────────●────────●────────●────────●────────●
-        \      / \      / \      / \      / \      /
-         ●────●   ●●●●─●   ●────●   ●●───●   ●────●
-      Maven      BDD login   CI    k6 perf  dashboard
-```
-
-| Rama | Propósito | Commits |
-|---|---|---|
-| `feature/configuracion-maven` | pom.xml, dependencias, plugins | 1 |
-| `feature/pruebas-unitarias` | Calculadora + suites de suma y resta | 3 |
-| `feature/bdd-login` | Three Amigos, servicio, feature, steps | 4 |
-| `feature/pipeline-ci` | ci.yml + Jenkinsfile | 1 |
-| `feature/performance-k6` | servidor mock, prueba k6, refactor de paquete | 2 |
-| `feature/observabilidad` | dashboard, métricas, alertas | 1 |
-| `docs/readme` | documentación final | 1 |
-
-**Convención de mensajes: Conventional Commits.**
+Las pruebas se organizan en niveles, de las más rápidas y numerosas a las más
+lentas y cercanas al usuario, siguiendo el "pipeline escalonado (unit →
+integration → functional → performance)" del curso (ME_4, p. 14). Cada nivel
+detecta un tipo de defecto que el anterior no puede ver.
 
 ```
-tipo(alcance): resumen en imperativo, máximo 72 caracteres
-
-Cuerpo que explica el PORQUÉ del cambio, no el qué (el qué ya está en
-el diff). Incluye el resultado de las pruebas cuando corresponde.
+                    ┌─────────────────────────┐
+                    │ Aceptación en staging   │  8   Selenium + API contra el contenedor desplegado
+                    ├─────────────────────────┤
+                    │ Performance (k6)        │  356 peticiones con umbrales de SLA
+                ┌───┴─────────────────────────┴───┐
+                │ Escenarios BDD (Cucumber)       │  8   Reglas de negocio en Gherkin
+            ┌───┴─────────────────────────────────┴───┐
+            │ Integración (servidor HTTP real)        │  11  API + JSON + servicio juntos
+        ┌───┴─────────────────────────────────────────┴───┐
+        │ Unitarias (JUnit 5)                             │  44  Lógica aislada, milisegundos
+    ┌───┴─────────────────────────────────────────────────┴───┐
+    │ Análisis estático (SpotBugs + Find Security Bugs)       │  Sin ejecutar el código
+    └─────────────────────────────────────────────────────────┘
 ```
 
-Tipos usados: `feat`, `test`, `docs`, `ci`, `chore`, `refactor`, `merge`.
+| Nivel | Herramienta | Qué valida | Cuándo corre | Cantidad |
+|---|---|---|---|---|
+| Análisis estático | SpotBugs + Find Security Bugs | Defectos probables y vulnerabilidades (inyección, XSS, nulos) | Cada push y PR, antes de las pruebas | 15 clases, 0 hallazgos |
+| Unitarias | JUnit 5 · Surefire | Lógica aislada: calculadora, configuración, códigos HTTP | Cada push y PR | 44 |
+| Integración | JUnit 5 + HttpClient · Failsafe | Servidor HTTP real en puerto libre: rutas, JSON, códigos, cabeceras | Cada push y PR | 11 |
+| BDD | Cucumber · Failsafe | Reglas RN-01 a RN-06 escritas en lenguaje de negocio | Cada push y PR | 8 |
+| Performance | k6 | SLA del login sobre el jar real: p95 < 800 ms, error < 1 %, > 5 TPS | Cada push y PR | 356 peticiones |
+| Aceptación | Cucumber + Selenium + HttpClient | Escenarios críticos de punta a punta sobre la imagen desplegada en GREEN | Deployment pipeline | 8 |
 
-> **Por qué `--no-ff` en los merges.** Un merge *fast-forward* aplasta la historia
-> de la rama y hace imposible saber qué commits formaron parte de qué entrega.
-> Con `--no-ff` queda un nodo de merge que documenta la integración, equivalente
-> a la traza que deja un Pull Request aprobado.
+**Principios aplicados**
 
-### 5.2 Proyecto Maven y dependencias
-
-Las versiones están centralizadas en `<properties>` y las familias de artefactos
-se importan mediante **BOM** (`junit-bom`, `cucumber-bom`), de modo que las
-dependencias individuales no declaran versión y no pueden desalinearse:
-
-```xml
-<dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>org.junit</groupId><artifactId>junit-bom</artifactId>
-      <version>${junit.version}</version><type>pom</type><scope>import</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.cucumber</groupId><artifactId>cucumber-bom</artifactId>
-      <version>${cucumber.version}</version><type>pom</type><scope>import</scope>
-    </dependency>
-  </dependencies>
-</dependencyManagement>
-```
-
-### 5.3 Pruebas unitarias atómicas
-
-Dos suites independientes: `CalculadoraSumaTest` y `CalculadoraRestaTest`,
-**14 casos en total**.
-
-```java
-@DisplayName("Calculadora - operacion suma")
-class CalculadoraSumaTest {
-
-    private Calculadora calculadora;
-
-    @BeforeEach
-    void prepararEscenario() {
-        // Instancia nueva por prueba: aislamiento total, sin estado compartido
-        calculadora = new Calculadora();
-    }
-
-    @Test
-    @DisplayName("Suma de dos numeros positivos devuelve el total esperado")
-    void sumarDosNumerosPositivos() {
-        int resultado = calculadora.sumar(7, 5);          // Act
-        assertEquals(12, resultado, "7 + 5 debe ser 12"); // Assert
-    }
-
-    @ParameterizedTest(name = "{0} + {1} = {2}")
-    @CsvSource({ "1, 1, 2", "100, 250, 350", "-10, -15, -25", "2147483646, 1, 2147483647" })
-    void sumarConDistintosDatos(int a, int b, int esperado) {
-        assertEquals(esperado, calculadora.sumar(a, b));
-    }
-}
-```
-
-**Cómo se garantiza la atomicidad**
-
-| Criterio | Implementación |
-|---|---|
-| Sin estado compartido | `@BeforeEach` crea una instancia nueva por prueba |
-| Sin dependencia de orden | Ninguna prueba consume el resultado de otra; pueden correr en cualquier orden o en paralelo |
-| Una sola razón de fallo | Cada prueba verifica un comportamiento; un fallo apunta a una causa concreta |
-| **Alta cohesión** | Cada clase agrupa pruebas de una única operación |
-| **Bajo acoplamiento** | Las suites no se conocen entre sí; `Calculadora` no depende de ninguna otra clase |
-| Sin recursos externos | Sin base de datos, red ni archivos: ejecución determinista |
-
-### 5.4 Cobertura de código
-
-Se integró **JaCoCo** para medir qué porcentaje del código de producción
-ejercitan realmente las pruebas. El agente se engancha a la JVM de Surefire y
-de Failsafe, de modo que el reporte combina la cobertura de las **pruebas
-unitarias y de los escenarios BDD** en un solo número.
-
-```xml
-<rules>
-  <rule>
-    <element>BUNDLE</element>          <!-- el proyecto completo -->
-    <limits>
-      <limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit>
-      <limit><counter>BRANCH</counter>     <value>COVEREDRATIO</value><minimum>0.70</minimum></limit>
-    </limits>
-  </rule>
-  <rule>
-    <element>CLASS</element>           <!-- y además cada clase por separado -->
-    <limits>
-      <limit><counter>INSTRUCTION</counter><value>COVEREDRATIO</value><minimum>0.70</minimum></limit>
-    </limits>
-  </rule>
-</rules>
-```
-
-> **Por qué dos reglas y no una.** Al configurar solo el umbral global, el
-> build pasaba con un 91 % de cobertura total… mientras la clase `Calculadora`
-> estaba al **39 %**, porque los métodos `multiplicar()` y `dividir()` no tenían
-> ninguna prueba. El promedio del proyecto los escondía, exactamente igual que
-> el promedio de latencia esconde el percentil 99.
->
-> Al agregar la regla por clase, el build falló:
->
-> ```
-> [WARNING] Rule violated for class cl.taller.qa.Calculadora:
->           instructions covered ratio is 0.39, but expected minimum is 0.70
-> [INFO] BUILD FAILURE
-> ```
->
-> La corrección no fue bajar el umbral, sino escribir las pruebas que faltaban
-> (`CalculadoraMultiplicacionTest` y `CalculadoraDivisionTest`, 14 casos más,
-> incluido el borde de dividir por cero). **Un umbral que se baja cuando molesta
-> deja de ser un control.**
-
-| Clase | Antes | Después |
-|---|---|---|
-| `Calculadora` | 39,3 % | **100 %** |
-| `ServicioAutenticacion` | 98,8 % | 98,8 % |
-| `ResultadoAutenticacion` | 100 % | 100 % |
-| **Total del proyecto** | 91,0 % | **99,1 %** |
-
-El reporte HTML navegable queda en `target/site/jacoco/index.html` y el pipeline
-lo publica en GitHub Pages junto con el resto.
-
-### 5.5 `.gitignore`
-
-Excluye lo regenerable (`target/`), los reportes (`cucumber-reports/`,
-`allure-results/`), la configuración personal de IDE (`.idea/`, `.vscode/`),
-los archivos del sistema operativo y, sobre todo, los **secretos** (`.env`,
-`credenciales.properties`). Se versiona el *script* del Maven wrapper pero no su
-binario descargado.
-
-### 5.6 Pipeline de CI
-
-Ver la sección [7. El pipeline explicado etapa por etapa](#7-el-pipeline-explicado-etapa-por-etapa).
+- **Atomicidad e independencia.** Cada prueba unitaria crea sus objetos, cada
+  prueba de integración levanta su propio servidor en un puerto libre y
+  Cucumber crea una instancia nueva de pasos por escenario.
+- **Idempotencia.** Las pruebas de aceptación corren contra un ambiente
+  compartido. Usan usuarios inventados en cada ejecución, así que repetir la
+  suite no bloquea cuentas (ME_3, p. 5: "pueden repetirse sin efectos
+  secundarios").
+- **Page Object y esperas explícitas.** Los pasos de Selenium no conocen
+  selectores y nunca usan pausas fijas.
+- **Verificación de versión.** El Acceptance Gate falla si responde una versión
+  distinta de la que se desplegó.
+- **Evidencia automática.** Si un escenario web falla, Selenium adjunta una
+  captura de pantalla al reporte.
+- **Cobertura como red de seguridad.** JaCoCo combina unitarias, integración y
+  BDD, y exige un mínimo por clase para que un promedio alto no esconda una
+  clase sin probar.
 
 ---
 
-## 6. Actividad 2 — BDD, performance y observabilidad
+## 7. Actividad 2: pipeline de integración continua
 
-### 6.1 Sesión Three Amigos
-
-Documentada completa en [`docs/01-sesion-three-amigos.md`](docs/01-sesion-three-amigos.md).
-
-| Rol | Pregunta que representa | Aporte |
-|---|---|---|
-| **Negocio** (Carolina Rojas) | ¿Qué problema resolvemos? | Valor y política de 3 intentos |
-| **Desarrollo** (Willians Melgar) | ¿Cómo lo construimos? | Contador por usuario, no por sesión |
-| **QA** (Daniela Fuentes) | ¿Qué puede salir mal? | Casos de borde: usuario inexistente, campos vacíos, mayúsculas |
-
-De la conversación salieron **6 reglas de negocio** (RN-01 a RN-06),
-**5 criterios de aceptación** (CA-1 a CA-5) y **7 ejemplos concretos** que se
-convirtieron, casi literalmente, en los escenarios Gherkin.
-
-### 6.2 Escenarios en Gherkin
-
-`src/test/resources/features/login.feature` — escrito en español, sin un solo
-detalle técnico, con **5 escenarios** (uno de ellos un `Esquema del escenario`
-con 4 filas de `Ejemplos`, lo que da **8 ejecuciones**):
-
-```gherkin
-# language: es
-@login
-Característica: Inicio de sesión en el Portal de Clientes
-
-  Antecedentes:
-    Dado que el portal tiene registrado al cliente "wmelgar" con la contraseña "Segura2026!"
-
-  @smoke @critico
-  Escenario: Ingreso exitoso con credenciales válidas
-    Cuando el cliente intenta ingresar con el usuario "wmelgar" y la contraseña "Segura2026!"
-    Entonces el acceso es concedido
-    Y el sistema muestra el mensaje "Bienvenido/a, wmelgar"
-
-  @negativo @regresion
-  Esquema del escenario: Rechazo de credenciales inválidas
-    Cuando el cliente intenta ingresar con el usuario "<usuario>" y la contraseña "<contrasena>"
-    Entonces el acceso es denegado
-    Y el sistema muestra el mensaje "<mensaje>"
-    Y le quedan <intentos> intentos disponibles
-
-    Ejemplos: Datos incorrectos y casos de borde
-      | caso                     | usuario  | contrasena  | mensaje                            | intentos |
-      | Contraseña equivocada    | wmelgar  | 1234        | Credenciales inválidas             | 2        |
-      | Diferencia de mayúsculas | wmelgar  | segura2026! | Credenciales inválidas             | 2        |
-      | Usuario inexistente      | fantasma | Segura2026! | Credenciales inválidas             | 2        |
-      | Usuario vacío            |          | Segura2026! | Debe ingresar usuario y contraseña | 3        |
-```
-
-> **Por qué un `Esquema del escenario`.** Los cuatro casos verifican **la misma
-> regla** con datos distintos. Escribirlos como cuatro escenarios separados
-> duplicaría el texto y escondería que se trata de una sola regla; como tabla, el
-> patrón queda explícito y agregar un caso nuevo cuesta una línea.
-
-**Etiquetas y para qué sirven:** `@smoke` (verificación rápida post-despliegue),
-`@critico`, `@negativo`, `@seguridad`, `@regresion`. Permiten ejecución
-selectiva: `mvn verify -Dcucumber.filter.tags="@smoke"`.
-
-### 6.3 Step definitions
-
-`src/test/java/cl/taller/qa/bdd/steps/PasosLogin.java`:
-
-```java
-public class PasosLogin {
-
-    /** Sistema bajo prueba. Cucumber crea una instancia nueva por escenario. */
-    private final ServicioAutenticacion servicio = new ServicioAutenticacion();
-    private ResultadoAutenticacion ultimoResultado;
-
-    @Dado("que el portal tiene registrado al cliente {string} con la contraseña {string}")
-    public void registrarCliente(String usuario, String contrasena) {
-        servicio.registrarUsuario(usuario, contrasena);
-    }
-
-    @Cuando("el cliente intenta ingresar con el usuario {string} y la contraseña {string}")
-    public void intentarIngresar(String usuario, String contrasena) {
-        ultimoResultado = servicio.autenticar(usuario, contrasena);
-    }
-
-    @Entonces("el sistema muestra el mensaje {string}")
-    public void verificarMensaje(String mensajeEsperado) {
-        assertEquals(mensajeEsperado, ultimoResultado.mensaje(),
-            "El mensaje mostrado al usuario no corresponde al acordado con Negocio");
-    }
-}
-```
-
-**Buenas prácticas aplicadas**
-
-- **Aislamiento por escenario** — Cucumber instancia la clase de pasos para cada
-  escenario, por lo que el estado nace limpio. Los escenarios son atómicos, igual
-  que las pruebas unitarias.
-- **Capa delgada** — los pasos traducen lenguaje de negocio a llamadas del
-  dominio; la lógica vive en `ServicioAutenticacion`, no en los pasos.
-- **Sin lógica condicional** — ningún `if` cambia la expectativa dentro de un paso.
-- **Pasos reutilizables** — un mismo método atiende `Dado` y `Cuando`, porque
-  Cucumber empareja el texto y no la palabra clave.
-- **Aserciones con mensaje** — ante un fallo, el reporte explica qué se esperaba.
-
-### 6.4 Prueba de performance
-
-`performance/login-carga.js` — **load test** del endpoint `POST /api/login`,
-elegido por ser el punto de entrada de todo el portal y su primer cuello de
-botella.
-
-```javascript
-export const options = {
-  stages: [
-    { duration: '15s', target: 10 },  // rampa: evita el "efecto avalancha"
-    { duration: '30s', target: 10 },  // meseta: aquí se mide
-    { duration: '10s', target: 0 },   // bajada controlada
-  ],
-  thresholds: {
-    'http_req_duration': ['p(95)<800', 'p(99)<1500'],
-    'http_req_failed':   ['rate<0.01'],
-    'checks':            ['rate>0.99'],
-    'http_reqs':         ['rate>5'],
-  },
-};
-```
-
-**Indicadores monitoreados y por qué**
-
-| Indicador | Qué mide | Por qué importa | Medido |
-|---|---|---|---|
-| **TPS** | Peticiones completadas por segundo | Es la capacidad real; si cae con la misma carga, algo se degradó | **5,91 req/s** |
-| **Latencia promedio** | Media de tiempos de respuesta | Referencia general; por sí sola engaña | **76,16 ms** |
-| **Latencia p95** | El 95 % responde bajo este tiempo | Indicador contractual: describe al 5 % peor atendido, que es quien reclama | **93,90 ms** |
-| **Latencia p99** | Cola larga | Delata pausas de GC, bloqueos y timeouts intermitentes | **329,18 ms** |
-| **Tasa de error** | % de fallas técnicas | Bajo carga aparecen errores invisibles con un solo usuario | **0,00 %** |
-| **Checks funcionales** | % de validaciones de negocio correctas | Responder rápido pero mal no sirve | **100 %** |
-
-> **El promedio esconde la cola.** En esta ejecución el promedio fue 76,2 ms y el
-> p99 más de cuatro veces más: 329 ms. Si solo mirásemos el promedio, la peor
-> experiencia real sería invisible. Por eso el SLA se define sobre el **p95**.
-
-> **Un hallazgo real del taller.** La primera ejecución fue **RECHAZADA** con
-> 15,9 % de errores. La causa no fue el rendimiento: el script reutilizaba
-> siempre el mismo usuario inválido, así que la regla RN-04 bloqueaba la cuenta
-> al tercer intento y el servicio respondía 423 en vez de 401. Se corrigió
-> generando un usuario distinto por iteración. La evidencia de ambas ejecuciones
-> está en `docs/evidencias/`, porque **demuestra que el quality gate funciona**:
-> k6 salió con código 99 y el build se habría marcado en rojo automáticamente.
-
-### 6.5 Dashboard de métricas
-
-Ver [`docs/02-dashboard-metricas.md`](docs/02-dashboard-metricas.md) y el
-dashboard en [`reportes/index.html`](reportes/index.html), publicado por el
-pipeline en GitHub Pages.
-
-Tres niveles de visibilidad, porque responden preguntas distintas:
-
-1. **`$GITHUB_STEP_SUMMARY`** — tabla de resultados dentro del propio run; es lo
-   primero que ve quien abre el Pull Request.
-2. **GitHub Pages** — dashboard HTML en una URL fija, accesible sin permisos de CI.
-3. **Grafana sobre Prometheus/InfluxDB** — la serie histórica larga, donde se ven
-   las tendencias de semanas y se configuran las alertas.
-
-### 6.6 Alertas automáticas
-
-Ver [`docs/03-alertas-automaticas.md`](docs/03-alertas-automaticas.md):
-matriz de **9 alertas** con severidad, canal, destinatario y acción esperada,
-más lo que deliberadamente **no** se alerta para evitar la fatiga de alertas.
-
-El principio que ordena todo: *si una alerta no obliga a nadie a hacer algo, no
-debe existir*.
-
----
-
-## 7. El pipeline explicado etapa por etapa
+Archivo: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Se dispara en
+cada push a `main`, `feature/**` y `fix/**`, en cada Pull Request hacia `main` y
+manualmente.
 
 ```
-  push / pull_request
-         │
-         ▼
-  ┌──────────────────────┐
-  │ 1 · Unitarias        │  mvn clean compile → mvn test
-  │   ~30 s              │  publica checks + resumen + artefactos
-  └──────────┬───────────┘
-             │ (si falla, todo se detiene aquí)
-      ┌──────┴──────┐
-      ▼             ▼
-┌───────────┐ ┌──────────────┐
-│ 2 · BDD   │ │ 3 · k6       │   corren en paralelo: no dependen entre sí
-│  Cucumber │ │  performance │
-│  + mvn    │ │  umbrales    │
-│    site   │ │  = gate      │
-└─────┬─────┘ └──────┬───────┘
-      └──────┬───────┘
-             ▼
-  ┌──────────────────────┐
-  │ 4 · Dashboard        │  GitHub Pages (solo en main)
-  └──────────┬───────────┘
-             ▼
-  ┌──────────────────────┐
-  │ 5 · Alertas          │  if: always() — corre incluso si algo falló
-  └──────────────────────┘
+ push / pull_request
+        │
+        ▼
+ ┌────────────────────────────────────────┐
+ │ 1 · Compilación, análisis estático     │  mvn compile → spotbugs:check → mvn test
+ │     y unitarias                        │
+ └───────────────────┬────────────────────┘
+          ┌──────────┴──────────┐           corren en paralelo
+          ▼                     ▼
+ ┌─────────────────────┐ ┌─────────────────────┐
+ │ 2 · Integración y   │ │ 3 · Performance k6  │
+ │     escenarios BDD  │ │     sobre el jar    │
+ │     + cobertura     │ │     real            │
+ └──────────┬──────────┘ └──────────┬──────────┘
+            └──────────┬────────────┘
+          ┌────────────┴────────────┐
+          ▼                         ▼
+ ┌─────────────────────┐ ┌─────────────────────┐
+ │ 4 · Dashboard en    │ │ 5 · Alertas         │
+ │     GitHub Pages    │ │     automáticas     │
+ └─────────────────────┘ └─────────────────────┘
+          │
+          └──► si todo terminó en verde sobre main: deployment pipeline
 ```
 
 | Decisión | Justificación |
 |---|---|
-| Etapas ordenadas por costo | *Fail fast*: un error trivial se detecta en segundos, no en minutos |
-| `cache: maven` en `setup-java` | Reutiliza `~/.m2` y reduce el build de minutos a segundos |
-| `concurrency` con `cancel-in-progress` | Dos pushes seguidos cancelan el run anterior: no se gastan minutos en un commit obsoleto |
-| Etapas 2 y 3 en paralelo | Son independientes entre sí; serializarlas solo alargaría el pipeline |
-| `-DskipUnitTests=true` en la etapa 2 | No repite las unitarias que ya pasaron en la etapa 1 |
-| `if: always()` en publicaciones y alertas | Los reportes y las alertas son *más* necesarios cuando algo falla |
-| Reportes como artefactos **y** en Pages | El artefacto sirve para depurar; la URL fija, para el equipo |
-| `Jenkinsfile` equivalente | Demuestra que la estrategia es independiente de la herramienta |
+| Etapas ordenadas por costo | *Fail fast*: un error de compilación o unitario se detecta en segundos |
+| Análisis estático antes de las pruebas | "Después de Build y antes de Unit Tests" (ME_6, p. 12) |
+| Integración y performance en paralelo | No dependen entre sí; serializarlas solo alargaría el pipeline |
+| k6 sobre el jar real | El SLA se mide sobre el artefacto que se entrega, no sobre una simulación |
+| Resultados como checks del PR y resumen del run | Las métricas se ven sin descargar artefactos |
+| `concurrency` con cancelación | Un push nuevo cancela el run obsoleto de la misma rama |
+| `Jenkinsfile` equivalente | Mismas etapas en Jenkins: la estrategia no depende de la herramienta |
 
-**Disparadores:** `push` a `main`, `feature/**` y `fix/**`; `pull_request` hacia
-`main`; y `workflow_dispatch` para ejecución manual.
+Detalle del dashboard y las alertas en
+[`docs/02-dashboard-metricas.md`](docs/02-dashboard-metricas.md) y
+[`docs/03-alertas-automaticas.md`](docs/03-alertas-automaticas.md).
 
 ---
 
-## 8. Reportes navegables
+## 8. Actividad 3: deployment pipeline con Blue-Green y rollback
 
-| Reporte | Generado por | Ruta | Contenido |
-|---|---|---|---|
-| **BDD · Cucumber** | Cucumber | `target/cucumber-reports/reporte-bdd.html` | Cada escenario con su paso a paso, duración y estado |
-| **Unitarias · Surefire** | maven-surefire-report-plugin | `target/site/surefire.html` | Resumen, detalle por clase y por caso |
-| **Aceptación · Failsafe** | maven-failsafe-plugin | `target/site/failsafe.html` | Resultado de la suite de integración |
-| **Performance · k6** | `handleSummary()` propio | `performance/resultados/reporte-performance.html` | Indicadores frente a los umbrales del SLA |
-| **Cobertura · JaCoCo** | jacoco-maven-plugin | `target/site/jacoco/index.html` | Cobertura por clase, método y línea |
-| **Dashboard de calidad** | Proyecto | `reportes/index.html` | Vista unificada funcional + performance |
+Archivo: [`.github/workflows/despliegue.yml`](.github/workflows/despliegue.yml).
+Diseño completo, justificación y evidencias en
+[`docs/05-pipeline-de-despliegue.md`](docs/05-pipeline-de-despliegue.md).
 
-Los formatos secundarios (`cucumber.json`, `cucumber-junit.xml`,
-`indicadores.json`) existen para alimentar dashboards y para que GitHub Actions y
-Jenkins muestren los resultados de forma nativa.
-
-```bash
-# Regenerar todos los reportes localmente
-mvn clean verify && mvn site
-node performance/servidor-mock.js & k6 run performance/login-carga.js
+```
+ CI en verde sobre main  (o Pull Request, sin promoción)
+        │
+        ▼
+ 1 · Empaquetar ── jar + imagen Docker portal-clientes:1.1.0-<commit> → GHCR
+        │
+        ▼
+ 2 · Staging efímero Blue-Green
+        estable   → BLUE  (:8081)  con tráfico
+        candidata → GREEN (:8082)  sin tráfico → health check de versión
+        Acceptance Gate (Selenium + API) contra GREEN
+        cambio de tráfico del proxy NGINX a GREEN → smoke test
+        si algo falla → infra/rollback.sh: el tráfico vuelve a BLUE
+        │
+        ▼
+ 3 · Promover (solo main) ── etiqueta 'estable' + release v1.1.0
 ```
 
----
+**Por qué Blue-Green.** El portal es un servicio de una sola instancia y el
+ambiente de pruebas no tiene usuarios reales. Con Blue-Green la versión nueva se
+valida completa **antes** de recibir tráfico y el rollback es inmediato. Un
+Canary necesitaría tráfico real para medir algo y un router con pesos (ME_6,
+pp. 8-11).
 
-## 9. Resultados obtenidos
+**Rollback en dos modalidades**
 
-Ejecución real del **29-08-2026**, JDK 17 · Maven 3.9.9 · k6 0.55.0:
+| Tipo | Cuándo | Cómo |
+|---|---|---|
+| Automático | Falla el health check, el Acceptance Gate o el smoke test | Paso con `if: failure()`, equivalente al `post { failure }` de Jenkins (ME_6, p. 6); verifica que el proxy responde la versión estable |
+| Manual asistido | Se detecta un defecto después de promover | Workflow `rollback-manual.yml`: se elige versión y motivo; se valida con sus propias pruebas de aceptación antes de devolverle el tráfico |
 
-| Suite | Ejecutadas | Fallos | Errores | Tiempo |
-|---|---|---|---|---|
-| Pruebas unitarias (Surefire) | **28** | 0 | 0 | 0,13 s |
-| Escenarios BDD (Failsafe + Cucumber) | **8** | 0 | 0 | 0,30 s |
-| **Total funcional** | **36** | **0** | **0** | — |
+### Demostración del rollback automático
 
-| Performance (k6) | Valor | Umbral | Resultado |
-|---|---|---|---|
-| Peticiones totales | 328 | — | — |
-| Throughput | 5,91 TPS | > 5 | ✅ |
-| Latencia promedio | 76,16 ms | < 400 ms | ✅ |
-| Latencia p95 | 93,90 ms | < 800 ms | ✅ |
-| Latencia p99 | 329,18 ms | < 1500 ms | ✅ |
-| Tasa de error | 0,00 % | < 1 % | ✅ |
-| Checks funcionales | 100 % | > 99 % | ✅ |
+El [PR #8](https://github.com/WilliansMelgar02/taller1-ci-bdd/pull/8)
+introduce un defecto realista **a propósito**: la interfaz envía el campo
+`clave` en lugar de `contrasena`. Se cerró sin integrar.
 
-**Resultado global: pipeline en verde, todos los umbrales cumplidos.**
-
-### La misma prueba en el pipeline
-
-La etapa 3 del pipeline ejecuta exactamente la misma prueba en un agente de
-GitHub Actions. Que las cifras sean parecidas pero no idénticas es lo esperado y
-lo deseable: son mediciones reales sobre máquinas distintas, no valores fijos.
-
-| Indicador | Local (Windows) | CI (ubuntu-latest) | Umbral |
-|---|---|---|---|
-| Throughput | 5,91 TPS | 6,00 TPS | > 5 |
-| Latencia media | 76,16 ms | 66,77 ms | < 400 ms |
-| Latencia p95 | 93,90 ms | 79,40 ms | < 800 ms |
-| Latencia p99 | 329,18 ms | 311,44 ms | < 1500 ms |
-| Tasa de error | 0,00 % | 0,00 % | < 1 % |
-| Checks funcionales | 100 % | 100 % | > 99 % |
-
-Si el umbral se cumpliera solo en una de las dos, el problema sería la prueba,
-no el sistema.
+| Etapa | Resultado | Por qué |
+|---|---|---|
+| CI: análisis estático, unitarias, integración, BDD y performance | Verde | Ninguna de esas pruebas ejecuta el JavaScript del navegador |
+| Empaquetar | Verde | La imagen se construye |
+| Health check de GREEN | Verde | El servidor arranca y responde la versión correcta |
+| **Acceptance Gate** | **Rojo: 2 de 8 escenarios fallan** | Selenium detecta que ningún cliente puede ingresar |
+| **Rollback automático** | **Ejecutado** | El tráfico nunca salió de BLUE (`1.1.0-81ff638`); GREEN se descartó |
+| Promoción | Omitida | La versión defectuosa nunca llegó a ser estable |
 
 ---
 
-## 10. Evidencias
+## 9. Cómo ejecutar las pruebas y los pipelines
 
-Todas en [`docs/evidencias/`](docs/evidencias/):
+### Requisitos
 
-| Archivo | Qué evidencia |
+- JDK 17 y Maven 3.9 o superior.
+- Google Chrome (pruebas de aceptación).
+- k6 (prueba de carga).
+- Docker (solo para reproducir el despliegue fuera del pipeline).
+
+En Windows, `preparar-entorno.ps1` agrega Maven y k6 al PATH de la sesión y
+deja la consola en UTF-8:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
+. .\preparar-entorno.ps1
+```
+
+### Pruebas en local
+
+```bash
+mvn clean test                       # 44 pruebas unitarias
+mvn clean verify                     # unitarias + 11 de integración + 8 BDD + umbral de cobertura
+mvn compile spotbugs:check           # análisis estático
+mvn site -DskipTests                 # reportes HTML de Surefire y Failsafe en target/site
+```
+
+### Aplicación y pruebas de aceptación en local
+
+```bash
+mvn package -DskipTests
+java -jar target/portal-clientes.jar            # portal en http://localhost:8080
+
+# en otra terminal, con el portal en ejecución:
+mvn verify -Paceptacion -Durl.base=http://localhost:8080 -Dversion.esperada=1.1.0
+mvn verify -Paceptacion -Dnavegador.visible=true   # para ver el navegador
+```
+
+Usuarios de demostración: `wmelgar / Segura2026!`, `cliente1 / Clave123!` y
+`cliente2 / Clave123!`.
+
+### Prueba de carga
+
+```powershell
+.\correr-performance.ps1             # empaqueta, levanta el portal, ejecuta k6 y lo detiene
+```
+
+### Imagen Docker
+
+```bash
+mvn package -DskipTests
+docker build --build-arg VERSION=1.1.0-local -t portal-clientes:1.1.0-local .
+docker run -p 8080:8080 -e COLOR_DESPLIEGUE=blue portal-clientes:1.1.0-local
+```
+
+### Pipelines
+
+| Pipeline | Cómo se ejecuta |
 |---|---|
-| `01-mvn-test-local.png` | Ejecución local de las pruebas unitarias (14/14) |
-| `02-mvn-verify-bdd.png` | Ejecución local de los 8 escenarios BDD |
-| `02b-escenarios-bdd-smoke.png` | Ejecución selectiva por etiqueta: 1 escenario, 7 omitidos |
-| `03-reporte-bdd-cucumber.png` | Reporte navegable de Cucumber |
-| `04-reporte-surefire.png` | Reporte navegable de Surefire |
-| `05-reporte-performance-k6.png` | Reporte navegable de k6 |
-| `07-git-log-ramas.png` | Árbol de ramas, commits y merges |
-| `08-estructura-proyecto.png` | Estructura del proyecto versionado |
-| `09-k6-consola.png` | Prueba de carga: 328 peticiones, APROBADA |
-| `11-reporte-failsafe.png` | Reporte navegable de Failsafe |
-| `12-github-actions-pipeline.png` | Pipeline en GitHub Actions: 5 etapas en verde |
-| `13-github-actions-metricas.png` | Resumen de métricas publicado por el run |
-| `14-dashboard-publicado.png` | Dashboard publicado en GitHub Pages |
-| `15-github-actions-artefactos.png` | Alertas, anotaciones y artefactos del run |
+| CI | Automático en cada push y Pull Request; manual en *Actions → CI - Pruebas Automatizadas → Run workflow* |
+| Deployment pipeline | Automático cuando el CI de `main` termina en verde y en cada Pull Request; manual en *Actions → Deployment Pipeline - Blue-Green* |
+| Rollback manual | *Actions → Rollback manual asistido → Run workflow*, indicando la versión (por ejemplo `1.1.0-4c77e2c`) y el motivo |
+| Jenkins | Job *Multibranch Pipeline* apuntando a este repositorio. Requisitos en la cabecera del `Jenkinsfile`: agente con Docker y Chrome, y credencial `ghcr` |
 
-Las capturas del pipeline ejecutándose en GitHub Actions se agregan tras el
-primer `push` al repositorio remoto.
+---
+
+## 10. Resultados obtenidos
+
+Ejecución del pipeline de `main` del 16-09-2026 (CI build #65 y su deployment
+pipeline).
+
+| Suite | Ejecutadas | Fallos | Etapa |
+|---|---|---|---|
+| Análisis estático | 15 clases | 0 hallazgos | CI · 1 |
+| Pruebas unitarias | 44 | 0 | CI · 1 |
+| Pruebas de integración | 11 | 0 | CI · 2 |
+| Escenarios BDD | 8 | 0 | CI · 2 |
+| Pruebas de aceptación en staging | 8 | 0 | Deployment · 2 |
+
+| Cobertura (JaCoCo) | Valor | Umbral |
+|---|---|---|
+| Instrucciones | 88,8 % | > 80 % |
+| Ramas | 87,1 % | > 70 % |
+| Clase con menor cobertura sujeta a umbral | 71,4 % | > 70 % |
+
+| Performance (k6, 10 usuarios virtuales, 55 s) | Valor | Umbral |
+|---|---|---|
+| Peticiones | 356 | — |
+| Throughput | 6,47 TPS | > 5 |
+| Latencia promedio | 0,92 ms | < 400 ms |
+| Latencia p95 | 1,37 ms | < 800 ms |
+| Latencia p99 | 2,30 ms | < 1500 ms |
+| Tasa de error | 0,00 % | < 1 % |
+
+| Despliegue | Resultado |
+|---|---|
+| Deployment pipeline de `main` | Verde: versión `1.1.0-4378134` promovida como estable |
+| Rollback automático (PR #8) | Ejecutado y verificado: tráfico restaurado en la versión estable |
+| Rollback manual a `1.1.0-4c77e2c` | Versión restaurada, validada con sus pruebas de aceptación y marcada como estable |
+| Release | [`v1.1.0`](https://github.com/WilliansMelgar02/taller1-ci-bdd/releases/tag/v1.1.0) |
+
+---
+
+## 11. Evidencias
+
+Todas las evidencias corresponden a ejecuciones reales. El índice navegable
+está en [`docs/evidencias/index.html`](docs/evidencias/index.html), también
+publicado en el dashboard.
+
+### Actividad 1
+
+| Fig. | Archivo | Qué demuestra |
+|---|---|---|
+| 20 | [`20-pull-requests-integrados.png`](docs/evidencias/20-pull-requests-integrados.png) | PRs #1 a #10 integrados y el #8 cerrado sin integrar |
+| 21 | [`21-historial-main.png`](docs/evidencias/21-historial-main.png) | Un merge commit por PR en `main` |
+| 22 | [`22-pom-dependencias.png`](docs/evidencias/22-pom-dependencias.png) | Dependencias de prueba del `pom.xml` |
+
+![Pull Requests integrados](docs/evidencias/20-pull-requests-integrados.png)
+
+### Actividad 2
+
+| Fig. | Archivo | Qué demuestra |
+|---|---|---|
+| 23 | [`23-ci-pipeline-main.png`](docs/evidencias/23-ci-pipeline-main.png) | Las cinco etapas del CI en verde sobre `main` |
+| 33 | [`33-reporte-analisis-estatico.png`](docs/evidencias/33-reporte-analisis-estatico.png) | SpotBugs: 15 clases, 0 advertencias |
+| 34 | [`34-reporte-integracion-failsafe.png`](docs/evidencias/34-reporte-integracion-failsafe.png) | 19 pruebas de Failsafe (11 de integración y 8 BDD) al 100 % |
+| 35 | [`35-dashboard-calidad.png`](docs/evidencias/35-dashboard-calidad.png) | Dashboard con los indicadores del build #65 |
+
+![Pipeline de CI en main](docs/evidencias/23-ci-pipeline-main.png)
+
+### Actividad 3
+
+| Fig. | Archivo | Qué demuestra |
+|---|---|---|
+| 24 | [`24-despliegue-blue-green-main.png`](docs/evidencias/24-despliegue-blue-green-main.png) | Deployment pipeline de `main` en verde |
+| 25 | [`25-rollback-automatico-run.png`](docs/evidencias/25-rollback-automatico-run.png) | Acceptance Gate en rojo y promoción omitida con el defecto |
+| 26 | [`26-pr-demo-rollback.png`](docs/evidencias/26-pr-demo-rollback.png) | PR #8: defecto intencional y despliegue fallido en staging |
+| 27 | [`27-rollback-manual-run.png`](docs/evidencias/27-rollback-manual-run.png) | Rollback manual asistido exitoso |
+| 28 | [`28-release-v1-1-0.png`](docs/evidencias/28-release-v1-1-0.png) | Release creada por la etapa de promoción |
+| 30 | [`30-reporte-aceptacion-verde.png`](docs/evidencias/30-reporte-aceptacion-verde.png) | Acceptance Gate en `main`: 8 escenarios aprobados |
+| 31 | [`31-reporte-aceptacion-rollback.png`](docs/evidencias/31-reporte-aceptacion-rollback.png) | Acceptance Gate con el defecto: 2 escenarios fallidos |
+| 32 | [`32-selenium-captura-del-fallo.png`](docs/evidencias/32-selenium-captura-del-fallo.png) | Captura tomada por Selenium en GREEN al fallar |
+| 36 | [`36-portal-web-local.png`](docs/evidencias/36-portal-web-local.png) | Portal ejecutándose en local con ingreso exitoso |
+
+![Deployment pipeline en main](docs/evidencias/24-despliegue-blue-green-main.png)
+
+![Captura de Selenium al detectar el defecto](docs/evidencias/32-selenium-captura-del-fallo.png)
+
+### Logs y auditoría
+
+GitHub solo muestra los logs a usuarios con sesión iniciada. Por eso se
+descargaron completos desde las ejecuciones reales:
+
+| Archivo | Contenido |
+|---|---|
+| [`logs/ci-1-commit-stage.log`](docs/evidencias/logs/ci-1-commit-stage.log) | Compilación, SpotBugs y 44 pruebas unitarias |
+| [`logs/ci-2-integracion-bdd.log`](docs/evidencias/logs/ci-2-integracion-bdd.log) | 19 pruebas de Failsafe y verificación de cobertura |
+| [`logs/ci-3-performance-k6.log`](docs/evidencias/logs/ci-3-performance-k6.log) | Prueba de carga sobre el portal real |
+| [`logs/despliegue-blue-green-main.log`](docs/evidencias/logs/despliegue-blue-green-main.log) | BLUE, GREEN, Acceptance Gate, switch y smoke test |
+| [`logs/rollback-automatico-pr8.log`](docs/evidencias/logs/rollback-automatico-pr8.log) | Defecto detectado y rollback verificado |
+| [`logs/rollback-manual.log`](docs/evidencias/logs/rollback-manual.log) | Restauración de la versión `1.1.0-4c77e2c` |
+| [`auditoria/`](docs/evidencias/auditoria/) | Metadatos de cada despliegue y logs de la candidata descartada |
+
+Las evidencias `01` a `16` corresponden al Taller 1 (Unidad II) y se conservan
+como historial del proyecto.
+
+---
+
+## 12. Relación con el material del curso
+
+| Material | Concepto | Aplicación en el proyecto |
+|---|---|---|
+| ME_1 (Unidad I) | GitFlow vs Trunk-Based; Maven y `pom.xml` | Trunk-Based justificado por su criterio; Maven con Surefire, Failsafe y perfiles |
+| ME_2 (Unidad I) | Configuración de ambientes; staging idéntico a producción | Staging con la misma imagen que se promueve; configuración solo por variables de entorno |
+| ME_3 (Unidad II) | Etapas Compile, Unit, Integration, Acceptance; idempotencia | Mismo orden de etapas; pruebas de aceptación idempotentes |
+| ME_4 (Unidad II) | BDD con Gherkin; pipeline escalonado; Page Objects | Escenarios en español, niveles de prueba escalonados y Page Object con Selenium |
+| ME_5 (Unidad III) | Deployment pipeline; commit stage; Acceptance Gate; entornos efímeros; versiones previas de artefactos | Pipeline de tres etapas, ambiente efímero en Docker e imágenes inmutables por commit |
+| ME_6 (Unidad III) | Rollback con `post.failure`; Blue-Green; SAST; auditoría | Rollback automático y manual, Blue-Green con NGINX, SpotBugs y metadatos de despliegue |
+
+### Documentación complementaria
+
+| Documento | Contenido |
+|---|---|
+| [`docs/01-sesion-three-amigos.md`](docs/01-sesion-three-amigos.md) | Sesión Three Amigos y reglas de negocio |
+| [`docs/02-dashboard-metricas.md`](docs/02-dashboard-metricas.md) | Métricas y dashboard |
+| [`docs/03-alertas-automaticas.md`](docs/03-alertas-automaticas.md) | Matriz de alertas |
+| [`docs/04-estrategia-de-ramas.md`](docs/04-estrategia-de-ramas.md) | Trunk-Based Development y protección de `main` |
+| [`docs/05-pipeline-de-despliegue.md`](docs/05-pipeline-de-despliegue.md) | Deployment pipeline, Blue-Green y rollback |
